@@ -255,9 +255,38 @@
        <div><label for="status-kehadiran" class="block text-sm font-semibold text-gray-700 mb-3">📊 Status Kehadiran</label> <select id="status-kehadiran" required class="glass-input w-full p-4 focus:outline-none text-gray-700 font-medium"> <option value="">-- Pilih Status --</option> <option value="Hadir">✅ Hadir</option> <option value="Sakit">🤒 Sakit</option> <option value="Izin">📝 Izin</option> <option value="Dinas Luar">🚗 Dinas Luar</option> </select>
        </div>
       </div>
-      <div><label for="keterangan-lokasi" class="block text-sm font-semibold text-gray-700 mb-3">📝 Keterangan Lokasi</label> <input type="text" id="keterangan-lokasi" required class="glass-input w-full p-4 focus:outline-none text-gray-700 font-medium" placeholder="Contoh: Ruang Kelas 1A, Kantor Guru, Perpustakaan, dll.">
+      <div><label for="keterangan-lokasi" class="block text-sm font-semibold text-gray-700 mb-3">📝 Keterangan Lokasi</label>
+       <div class="relative"><input type="text" id="keterangan-lokasi" required class="glass-input w-full p-4 pr-12 focus:outline-none text-gray-700 font-medium" placeholder="Tulis lokasi atau klik GPS untuk lokasi otomatis"> <button type="button" id="get-gps-location" class="absolute right-2 top-1/2 transform -translate-y-1/2 gradient-button text-white px-3 py-2 text-sm rounded-lg" title="Dapatkan Lokasi GPS"> 🌍 GPS </button>
+       </div>
        <div class="mt-2 text-xs text-gray-500">
-        💡 Masukkan lokasi atau tempat dimana Anda hadir saat ini
+        💡 Tulis lokasi secara manual atau klik tombol GPS untuk mendapatkan lokasi otomatis
+       </div>
+      </div><!-- GPS Location Display -->
+      <div id="gps-info" class="hidden mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+       <h4 class="font-semibold text-blue-800 mb-2">🌍 Informasi GPS</h4>
+       <div class="grid md:grid-cols-2 gap-4 text-sm">
+        <div><span class="font-medium text-blue-700">📍 Koordinat:</span>
+         <div id="gps-coordinates" class="text-blue-600 font-mono">
+          -
+         </div>
+        </div>
+        <div><span class="font-medium text-blue-700">📍 Alamat:</span>
+         <div id="gps-address" class="text-blue-600">
+          Sedang mencari alamat...
+         </div>
+        </div>
+        <div><span class="font-medium text-blue-700">⏰ Waktu:</span>
+         <div id="gps-time" class="text-blue-600">
+          -
+         </div>
+        </div>
+        <div><span class="font-medium text-blue-700">🎯 Akurasi:</span>
+         <div id="gps-accuracy" class="text-blue-600">
+          -
+         </div>
+        </div>
+       </div>
+       <div class="mt-3 flex gap-2"><button type="button" id="refresh-gps" class="gradient-button text-white px-4 py-2 text-sm"> 🔄 Refresh GPS </button> <button type="button" id="use-gps-location" class="gradient-button bg-green-500 text-white px-4 py-2 text-sm"> ✅ Gunakan Lokasi Ini </button> <button type="button" id="close-gps" class="gradient-button bg-gray-500 text-white px-4 py-2 text-sm"> ❌ Tutup </button>
        </div>
       </div><button type="submit" id="submit-attendance" class="gradient-button w-full text-white py-4 px-8 font-bold text-lg"> 💾 Simpan Kehadiran </button>
      </form><!-- Grafik Kehadiran -->
@@ -388,11 +417,12 @@
           <th class="p-6 text-left text-sm font-bold">📊 Status</th>
           <th class="p-6 text-left text-sm font-bold">⏰ Jam Hadir</th>
           <th class="p-6 text-left text-sm font-bold">📝 Keterangan Lokasi</th>
+          <th class="p-6 text-left text-sm font-bold">🌍 GPS</th>
          </tr>
         </thead>
         <tbody id="attendance-list">
          <tr>
-          <td colspan="4" class="p-8 text-center text-gray-500 text-lg font-medium">🔍 Belum ada data kehadiran hari ini</td>
+          <td colspan="5" class="p-8 text-center text-gray-500 text-lg font-medium">🔍 Belum ada data kehadiran hari ini</td>
          </tr>
         </tbody>
        </table>
@@ -751,6 +781,13 @@
                 jam_hadir: now.toLocaleTimeString('id-ID'),
                 tanggal: now.toISOString().split('T')[0],
                 keterangan_lokasi: keteranganLokasi,
+                gps_data: currentGPSData ? {
+                    latitude: currentGPSData.latitude,
+                    longitude: currentGPSData.longitude,
+                    accuracy: currentGPSData.accuracy,
+                    address: currentGPSData.address ? currentGPSData.address.shortAddress : null,
+                    timestamp: currentGPSData.timestamp
+                } : null,
                 created_at: now.toISOString(),
                 __backendId: generateId()
             };
@@ -829,6 +866,16 @@
                         <td class="p-6">
                             ${record.keterangan_lokasi ? 
                                 `<div class="text-sm font-medium">${record.keterangan_lokasi}</div>` : 
+                                '<span class="text-gray-400">-</span>'
+                            }
+                        </td>
+                        <td class="p-6">
+                            ${record.gps_data ? 
+                                `<div class="text-xs">
+                                    <div class="font-mono text-blue-600">${record.gps_data.latitude.toFixed(4)}, ${record.gps_data.longitude.toFixed(4)}</div>
+                                    <div class="text-gray-500">±${Math.round(record.gps_data.accuracy)}m</div>
+                                    ${record.gps_data.address ? `<div class="text-gray-600 mt-1">${record.gps_data.address}</div>` : ''}
+                                </div>` : 
                                 '<span class="text-gray-400">-</span>'
                             }
                         </td>
@@ -1624,7 +1671,7 @@
                     try {
                         // Create detailed CSV data
                         const csvData = [];
-                        csvData.push(['Tanggal', 'Nama Guru', 'NIP', 'Jabatan', 'Status Kehadiran', 'Jam Hadir', 'Keterangan Lokasi']);
+                        csvData.push(['Tanggal', 'Nama Guru', 'NIP', 'Jabatan', 'Status Kehadiran', 'Jam Hadir', 'Keterangan Lokasi', 'GPS Latitude', 'GPS Longitude', 'GPS Akurasi', 'GPS Alamat']);
                         
                         filteredRecords.forEach(record => {
                             const teacher = teachers.find(t => t.nama_guru === record.nama_guru);
@@ -1637,7 +1684,11 @@
                                 teacher ? (teacher.jabatan || '-') : '-',
                                 record.status || '-',
                                 record.jam_hadir || '-',
-                                record.keterangan_lokasi || '-'
+                                record.keterangan_lokasi || '-',
+                                record.gps_data ? record.gps_data.latitude.toFixed(6) : '-',
+                                record.gps_data ? record.gps_data.longitude.toFixed(6) : '-',
+                                record.gps_data ? `±${Math.round(record.gps_data.accuracy)}m` : '-',
+                                record.gps_data && record.gps_data.address ? record.gps_data.address : '-'
                             ]);
                         });
                         
@@ -2078,9 +2129,199 @@
             }
         }
 
+        // GPS functionality
+        let currentGPSData = null;
+
+        // GPS Location Functions
+        function getCurrentLocation() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Geolocation tidak didukung oleh browser ini'));
+                    return;
+                }
+
+                const options = {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 60000 // Cache for 1 minute
+                };
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        resolve({
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            accuracy: position.coords.accuracy,
+                            timestamp: position.timestamp
+                        });
+                    },
+                    (error) => {
+                        let errorMessage = 'Gagal mendapatkan lokasi GPS';
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage = 'Akses lokasi ditolak. Silakan izinkan akses lokasi di browser.';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage = 'Informasi lokasi tidak tersedia. Pastikan GPS aktif.';
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage = 'Timeout mendapatkan lokasi. Silakan coba lagi.';
+                                break;
+                        }
+                        reject(new Error(errorMessage));
+                    },
+                    options
+                );
+            });
+        }
+
+        async function reverseGeocode(latitude, longitude) {
+            try {
+                // Using OpenStreetMap Nominatim API (free, no API key required)
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+                    {
+                        headers: {
+                            'User-Agent': 'Aplikasi Kehadiran Guru SDN Muhara'
+                        }
+                    }
+                );
+                
+                if (!response.ok) {
+                    throw new Error('Gagal mendapatkan alamat');
+                }
+                
+                const data = await response.json();
+                
+                if (data && data.display_name) {
+                    return {
+                        fullAddress: data.display_name,
+                        shortAddress: formatShortAddress(data.address || {}),
+                        details: data.address || {}
+                    };
+                } else {
+                    return {
+                        fullAddress: `Koordinat: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+                        shortAddress: `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`,
+                        details: {}
+                    };
+                }
+            } catch (error) {
+                console.error('Reverse geocoding error:', error);
+                return {
+                    fullAddress: `Koordinat: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+                    shortAddress: `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`,
+                    details: {}
+                };
+            }
+        }
+
+        function formatShortAddress(addressDetails) {
+            const parts = [];
+            
+            // Priority order for address components
+            if (addressDetails.house_number && addressDetails.road) {
+                parts.push(`${addressDetails.house_number} ${addressDetails.road}`);
+            } else if (addressDetails.road) {
+                parts.push(addressDetails.road);
+            }
+            
+            if (addressDetails.suburb || addressDetails.neighbourhood) {
+                parts.push(addressDetails.suburb || addressDetails.neighbourhood);
+            }
+            
+            if (addressDetails.city || addressDetails.town || addressDetails.village) {
+                parts.push(addressDetails.city || addressDetails.town || addressDetails.village);
+            }
+            
+            return parts.length > 0 ? parts.join(', ') : 'Alamat tidak diketahui';
+        }
+
+        async function handleGPSRequest() {
+            const gpsButton = document.getElementById('get-gps-location');
+            const gpsInfo = document.getElementById('gps-info');
+            
+            // Show loading state
+            gpsButton.textContent = '⏳ GPS...';
+            gpsButton.disabled = true;
+            
+            try {
+                // Get GPS coordinates
+                const location = await getCurrentLocation();
+                
+                // Update GPS info display
+                document.getElementById('gps-coordinates').textContent = 
+                    `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
+                document.getElementById('gps-time').textContent = 
+                    new Date(location.timestamp).toLocaleString('id-ID');
+                document.getElementById('gps-accuracy').textContent = 
+                    `±${Math.round(location.accuracy)} meter`;
+                
+                // Show GPS info panel
+                gpsInfo.classList.remove('hidden');
+                
+                // Get address (async, don't wait for it)
+                reverseGeocode(location.latitude, location.longitude).then(addressData => {
+                    document.getElementById('gps-address').textContent = addressData.shortAddress;
+                    
+                    // Store complete GPS data
+                    currentGPSData = {
+                        ...location,
+                        address: addressData
+                    };
+                });
+                
+                // Store basic GPS data immediately
+                currentGPSData = {
+                    ...location,
+                    address: {
+                        shortAddress: `Lat: ${location.latitude.toFixed(4)}, Lng: ${location.longitude.toFixed(4)}`,
+                        fullAddress: `Koordinat: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
+                    }
+                };
+                
+                showMessage('✅ Lokasi GPS berhasil didapatkan!', 'success');
+                
+            } catch (error) {
+                console.error('GPS Error:', error);
+                showMessage(`❌ ${error.message}`, 'error');
+                gpsInfo.classList.add('hidden');
+            } finally {
+                // Reset button state
+                gpsButton.textContent = '🌍 GPS';
+                gpsButton.disabled = false;
+            }
+        }
+
+        // GPS Event Listeners
+        document.getElementById('get-gps-location').addEventListener('click', handleGPSRequest);
+
+        document.getElementById('refresh-gps').addEventListener('click', handleGPSRequest);
+
+        document.getElementById('use-gps-location').addEventListener('click', function() {
+            if (currentGPSData && currentGPSData.address) {
+                const keteranganInput = document.getElementById('keterangan-lokasi');
+                
+                // Set location text with GPS data
+                const gpsLocationText = `GPS: ${currentGPSData.address.shortAddress}`;
+                keteranganInput.value = gpsLocationText;
+                
+                // Hide GPS info
+                document.getElementById('gps-info').classList.add('hidden');
+                
+                showMessage('✅ Lokasi GPS berhasil digunakan!', 'success');
+            } else {
+                showMessage('❌ Data GPS tidak tersedia. Silakan refresh GPS terlebih dahulu.', 'error');
+            }
+        });
+
+        document.getElementById('close-gps').addEventListener('click', function() {
+            document.getElementById('gps-info').classList.add('hidden');
+        });
+
         // Initialize app when page loads
         initializeApp();
         loadStoredImages();
     </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9988a7b1a1ee051a',t:'MTc2MjEzOTE4MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9988be753760244a',t:'MTc2MjE0MDExMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
