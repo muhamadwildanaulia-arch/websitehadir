@@ -636,21 +636,23 @@
         }
 
         // LocalStorage functions for Netlify deployment
-        async function saveDataToServer(data) {
-			const sheetURL = "https://script.google.com/macros/s/AKfycbwSYgpXLOq3vI_fh48-nqhy95LXC3dkm3-j_yd_PABXgpSh-uyfo5BZ9__t41TzSMyP/exec";
-			try {
-			  const response = await fetch(sheetURL, {
+       // === Kirim data ke Google Sheets ===
+async function saveDataToServer(data) {
+  const sheetURL = "https://script.google.com/macros/s/AKfycbxPUXd7u8CM4pO5R4iJguBdLIzVugwir5cdWiAeZBnaUvLvNDLEupqV2owOmS71bK_s/exec";
+
+  try {
+    await fetch(sheetURL, {
       method: "POST",
-      mode: "no-cors",
+      mode: "no-cors", // biar aman dari CORS
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data)
-			  });
+    });
     console.log("✅ Data terkirim ke Google Sheets:", data);
   } catch (error) {
-    console.error("❌ Gagal kirim data ke Google Sheets:", error);
-    alert("Gagal menyimpan ke Google Sheets. Periksa koneksi atau izin akses Web App.");
-			}
-		}
+    console.error("❌ Gagal kirim ke Google Sheets:", error);
+    alert("Gagal menyimpan data ke Google Sheets. Cek koneksi atau izin Web App.");
+  }
+}
 
         function loadDataFromStorage() {
             try {
@@ -2335,4 +2337,5 @@
  <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9988be753760244a',t:'MTc2MjE0MDExMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 
 </html>
+
 
