@@ -708,19 +708,38 @@
             const jabatan = document.getElementById('jabatan-guru').value;
             const statusKepegawaian = document.getElementById('status-kepegawaian').value;
             
-            const teacherData = {
-                type: 'teacher',
-                nama_guru: nama,
-                nip: nip,
-                jabatan: jabatan,
-                status_kepegawaian: statusKepegawaian,
-                created_at: new Date().toISOString(),
-                __backendId: editingTeacher ? editingTeacher.__backendId : generateId()
-            };
+           function addTeacher() {
+  const nama = document.getElementById('teacher-name').value.trim();
+  const nip = document.getElementById('teacher-nip').value.trim();
+  const jabatan = document.getElementById('teacher-jabatan').value.trim();
+  const statusKepegawaian = document.getElementById('teacher-status-kepegawaian').value.trim();
 
-            try {
-                if (editingTeacher) {
-                    // Update existing teacher
+  if (!nama) {
+    alert("Nama guru harus diisi!");
+    return;
+  }
+
+  const teacherData = {
+    type: 'teacher', // 👈 boleh dibiarkan 'teacher' atau ubah jadi 'guru'
+    nama_guru: nama,
+    nip: nip,
+    jabatan: jabatan,
+    status_kepegawaian: statusKepegawaian,
+    created_at: new Date().toISOString(),
+    __backendId: editingTeacher ? editingTeacher.__backendId : generateId()
+  };
+
+  // Simpan ke lokal seperti biasa
+  if (editingTeacher) {
+    const index = teachers.findIndex(t => t.__backendId === editingTeacher.__backendId);
+    teachers[index] = teacherData;
+    editingTeacher = null;
+  } else {
+    teachers.push(teacherData);
+  }
+
+ 
+                      // Update existing teacher
                     const index = teachers.findIndex(t => t.__backendId === editingTeacher.__backendId);
                     if (index !== -1) {
                         teachers[index] = teacherData;
@@ -737,12 +756,17 @@
                 }
 
                 // Save to localStorage
-                saveDataToStorage();
+                saveDataToStorage();          // 🟢 tetap simpan lokal
+  saveDataToServer(teacherData); // 🟢 kirim ke Google Sheets
+
                 
                 // Update UI
                 updateTeacherList();
                 updateTeacherDropdown();
-                
+                renderTeacherTable();
+  resetTeacherForm();
+  alert("✅ Data guru berhasil disimpan dan dikirim ke Google Sheets!");
+}
                 showMessage(editingTeacher ? 'Data guru berhasil diupdate!' : 'Guru berhasil ditambahkan!', 'success');
                 document.getElementById('guru-form').reset();
                 cancelEdit();
@@ -795,10 +819,19 @@
             try {
                 // Add to attendance records
                 attendanceRecords.push(attendanceData);
-                
+                function submitAttendance() {
+  const attendanceData = {
+    type: "absensi",
+    nama_guru: selectedTeacherName,
+    status: attendanceStatus,
+    jam_hadir: currentTime,
+    keterangan_lokasi: lokasi
+  };
+
                 // Save to localStorage
                 saveDataToStorage();
-                
+  saveDataToServer(attendanceData); // ✅ kirim ke Google Sheets
+                 
                 // Update UI
                 updateAttendanceList();
                 
@@ -1071,7 +1104,7 @@
                 case 'Guru Seni Budaya': return 'bg-pink-100 text-pink-800';
                 case 'Guru BK': return 'bg-yellow-100 text-yellow-800';
                 case 'Pustakawan': return 'bg-emerald-100 text-emerald-800';
-                case 'Tenaga Administrasi': return 'bg-gray-100 text-gray-800';
+                case 'Penjaga Sekolah': return 'bg-gray-100 text-gray-800';
                 default: return 'bg-gray-100 text-gray-800';
             }
         }
@@ -1088,7 +1121,7 @@
                 case 'Guru Seni Budaya': return '🎨';
                 case 'Guru BK': return '💬';
                 case 'Pustakawan': return '📖';
-                case 'Tenaga Administrasi': return '📋';
+                case 'Penjaga Sekolah': return '📋';
                 default: return '❓';
             }
         }
@@ -2322,6 +2355,24 @@
         // Initialize app when page loads
         initializeApp();
         loadStoredImages();
+   // === Kirim data ke Google Sheets ===
+async function saveDataToServer(data) {
+  const sheetURL = "https://script.google.com/macros/s/AKfycbxzXNxUab7Xi54c3DhKb1YQzhxyn99M2sivrof-zjnh_Ts4Oid6PEdrMWWom4GU_a3x/exec"; // Ganti dengan URL /exec kamu
+  try {
+    await fetch(sheetURL, {
+      method: "POST",
+      mode: "no-cors", // biar aman dari CORS
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+    console.log("✅ Data terkirim ke Google Sheets:", data);
+  } catch (error) {
+    console.error("❌ Gagal kirim ke Google Sheets:", error);
+    alert("Gagal menyimpan ke Google Sheets. Cek koneksi atau izin akses Web App.");
+  }
+}
+
     </script>
  <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9988be753760244a',t:'MTc2MjE0MDExMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+
 </html>
