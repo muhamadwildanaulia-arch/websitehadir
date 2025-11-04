@@ -636,14 +636,19 @@
         }
 
         // LocalStorage functions for Netlify deployment
-        function saveDataToStorage() {
-            try {
-                localStorage.setItem('teachers', JSON.stringify(teachers));
-                localStorage.setItem('attendanceRecords', JSON.stringify(attendanceRecords));
-            } catch (error) {
-                console.error('Error saving data to localStorage:', error);
-            }
-        }
+        async function saveDataToServer(data) {
+			const sheetURL = "https://script.google.com/macros/s/AKfycbyZWKxDR_d65RhGo1gZC-cwjOgPi4EpJNo25aDF_eTmwguBi1tzV0TD-vI-A8Rutoz7/exec";
+			try {
+				await fetch(sheetURL, {
+					method: "POST",
+					body: JSON.stringify(data),
+					headers: { "Content-Type": "application/json" }
+				});
+				console.log("Data berhasil dikirim ke Google Sheets");
+			} catch (error) {
+			  console.error("Gagal kirim data ke Google Sheets:", error);
+			}
+		}
 
         function loadDataFromStorage() {
             try {
@@ -738,6 +743,7 @@
 
                 // Save to localStorage
                 saveDataToStorage();
+				saveDataToServer(teacherData);
                 
                 // Update UI
                 updateTeacherList();
@@ -798,6 +804,7 @@
                 
                 // Save to localStorage
                 saveDataToStorage();
+				saveDataToServer(attendanceData);
                 
                 // Update UI
                 updateAttendanceList();
