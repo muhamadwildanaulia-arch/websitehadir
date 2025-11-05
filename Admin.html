@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel – SDN Muhara</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <style>
+    body { background:#f4f6f9; font-family: 'Inter', sans-serif; }
+    .sidebar { width:250px; background:#1e3a8a; color:white; min-height:100vh; }
+    .sidebar a { display:block; padding:12px 20px; color:white; border-radius:6px; margin:4px 8px; }
+    .sidebar a:hover, .sidebar a.active { background:#2563eb; }
+    .content { margin-left:250px; padding:20px; }
+    #loginPage { min-height:100vh; background:#1e3a8a; display:flex; flex-direction:column; justify-content:center; align-items:center; color:white; }
+    #loginBox { background:white; color:#1e3a8a; border-radius:12px; padding:40px; width:320px; box-shadow:0 4px 12px rgba(0,0,0,0.2); }
+    input, select { outline:none; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage">
+  <img src="[Ukuran asli] SD Negeri Muhara.png" alt="Logo SDN Muhara" class="h-20 mb-4 bg-white p-1 rounded">
+  <div id="loginBox">
+    <h2 class="text-2xl font-bold text-center mb-4">Login Admin</h2>
+    <input id="username" type="text" placeholder="Username" class="border w-full p-2 rounded mb-3">
+    <input id="password" type="password" placeholder="Password" class="border w-full p-2 rounded mb-4">
+    <button onclick="loginAdmin()" class="w-full bg-blue-800 hover:bg-blue-900 text-white py-2 rounded">Masuk</button>
+    <p id="loginError" class="text-red-600 text-center mt-3 hidden">Username atau password salah</p>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="adminPanel" class="hidden">
+  <!-- SIDEBAR -->
+  <div class="sidebar fixed top-0 left-0 flex flex-col items-center">
+    <img src="[Ukuran asli] SD Negeri Muhara.png" alt="Logo SDN Muhara" class="h-20 mt-4 mb-2 bg-white p-1 rounded">
+    <h1 class="text-lg font-semibold mb-6 text-center">Admin SDN Muhara</h1>
+    <a href="#" id="menu-dashboard" class="active" onclick="showPage('dashboard')">🏠 Dashboard</a>
+    <a href="#" id="menu-guru" onclick="showPage('guru')">👩‍🏫 Data Guru</a>
+    <a href="#" id="menu-laporan" onclick="showPage('laporan')">📊 Laporan</a>
+    <a href="#" onclick="logout()" class="mt-auto mb-6 bg-red-600 hover:bg-red-700 w-4/5 text-center rounded">Keluar</a>
+  </div>
+
+  <!-- KONTEN UTAMA -->
+  <div class="content">
+    <header class="flex justify-between items-center bg-white p-4 rounded shadow mb-4">
+      <h2 class="text-xl font-bold text-blue-900" id="pageTitle">Dashboard</h2>
+      <div id="clock" class="font-mono text-lg text-gray-700"></div>
+    </header>
+
+    <!-- DASHBOARD SECTION -->
+    <section id="page-dashboard">
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="bg-white p-4 rounded shadow text-center">
+          <h3 class="text-gray-500">Guru Terdaftar</h3>
+          <p id="totalGuru" class="text-3xl font-bold text-blue-900">0</p>
+        </div>
+        <div class="bg-white p-4 rounded shadow text-center">
+          <h3 class="text-gray-500">Kehadiran Hari Ini</h3>
+          <p id="totalHadir" class="text-3xl font-bold text-green-600">0</p>
+        </div>
+        <div class="bg-white p-4 rounded shadow text-center">
+          <h3 class="text-gray-500">Izin/Sakit/DL</h3>
+          <p id="totalLain" class="text-3xl font-bold text-yellow-500">0</p>
+        </div>
+      </div>
+      <div class="bg-white p-5 rounded shadow mt-6">
+        <h3 class="font-semibold text-blue-900 mb-3">Grafik Kehadiran Harian</h3>
+        <canvas id="chartDashboard" height="100"></canvas>
+      </div>
+    </section>
+
+    <!-- HALAMAN DATA GURU & LAPORAN akan ditambahkan di Blok 2 & 3 -->
+  </div>
+</div>
+
+<script>
+/* === LOGIN ADMIN === */
+function loginAdmin() {
+  const u = document.getElementById('username').value.trim();
+  const p = document.getElementById('password').value.trim();
+  if (u === 'admin' && p === '198901162023211009') {
+    document.getElementById('loginPage').classList.add('hidden');
+    document.getElementById('adminPanel').classList.remove('hidden');
+  } else {
+    document.getElementById('loginError').classList.remove('hidden');
+  }
+}
+
+/* === LOGOUT === */
+function logout() {
+  document.getElementById('adminPanel').classList.add('hidden');
+  document.getElementById('loginPage').classList.remove('hidden');
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
+}
+
+/* === JAM DIGITAL === */
+function updateClock(){
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(updateClock,1000);
+
+/* === GANTI HALAMAN === */
+function showPage(page){
+  ['dashboard','guru','laporan'].forEach(p=>{
+    const section=document.getElementById('page-'+p);
+    if(section) section.classList.add('hidden');
+    const menu=document.getElementById('menu-'+p);
+    if(menu) menu.classList.remove('active');
+  });
+  document.getElementById('page-'+page).classList.remove('hidden');
+  document.getElementById('menu-'+page).classList.add('active');
+  document.getElementById('pageTitle').textContent =
+    page==='guru'?'Data Guru':(page==='laporan'?'Laporan Kehadiran':'Dashboard');
+}
+</script>
+<!-- === HALAMAN DATA GURU === -->
+<section id="page-guru" class="hidden">
+  <div class="bg-white p-5 rounded shadow mb-6">
+    <h3 class="text-lg font-semibold text-blue-900 mb-3">Tambah / Edit Data Guru</h3>
+    <form id="guruForm" class="grid md:grid-cols-2 gap-3">
+      <input id="guruNama" type="text" class="border p-2 rounded" placeholder="Nama Guru" required>
+      <input id="guruNip" type="text" class="border p-2 rounded" placeholder="NIP">
+      <input id="guruJabatan" type="text" class="border p-2 rounded" placeholder="Jabatan">
+      <select id="guruStatus" class="border p-2 rounded">
+        <option value="PNS">PNS</option>
+        <option value="PPPK">PPPK</option>
+        <option value="Honorer">Honorer</option>
+      </select>
+      <button type="submit" class="bg-blue-800 hover:bg-blue-900 text-white rounded py-2 md:col-span-2">Simpan Guru</button>
+    </form>
+  </div>
+
+  <div class="bg-white p-5 rounded shadow">
+    <h3 class="text-lg font-semibold text-blue-900 mb-3">Daftar Guru</h3>
+    <table class="w-full border-collapse border text-sm">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="border p-2">Nama</th>
+          <th class="border p-2">NIP</th>
+          <th class="border p-2">Jabatan</th>
+          <th class="border p-2">Status</th>
+          <th class="border p-2">Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="guruList"></tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKj5ohfsNaLRJ83pzSyz8CykGzl_Sw7FEMW4TkDmJErsh-X72hZCC9V8YA0S7YmWmk/exec";
+let guruData = [];
+
+/* === LOAD DATA GURU DARI SHEET === */
+async function loadGuru() {
+  try {
+    const res = await fetch(GOOGLE_SCRIPT_URL + "?sheet=guru");
+    const data = await res.json();
+    guruData = data.slice(1).map(r => ({
+      nama: r[0], nip: r[1], jabatan: r[2], status: r[3]
+    }));
+    renderGuruTable();
+    document.getElementById('totalGuru').textContent = guruData.length;
+  } catch (e) {
+    console.error('Gagal memuat data guru:', e);
+  }
+}
+
+/* === RENDER TABEL GURU === */
+function renderGuruTable() {
+  const tbody = document.getElementById('guruList');
+  if (!guruData.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-gray-500">Belum ada data guru</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = guruData.map((g, i) => `
+    <tr>
+      <td class="border p-2">${g.nama}</td>
+      <td class="border p-2">${g.nip}</td>
+      <td class="border p-2">${g.jabatan}</td>
+      <td class="border p-2">${g.status}</td>
+      <td class="border p-2 text-center">
+        <button class="text-blue-600" onclick="editGuru(${i})">✏️</button>
+        <button class="text-red-600 ml-2" onclick="hapusGuru(${i})">🗑️</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+/* === SIMPAN / UPDATE GURU === */
+document.getElementById('guruForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const data = {
+    nama: document.getElementById('guruNama').value,
+    nip: document.getElementById('guruNip').value,
+    jabatan: document.getElementById('guruJabatan').value,
+    status: document.getElementById('guruStatus').value
+  };
+  await fetch(GOOGLE_SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({ type: "teacher", data })
+  });
+  alert("✅ Data guru berhasil disimpan!");
+  e.target.reset();
+  loadGuru();
+});
+
+/* === EDIT GURU === */
+function editGuru(i) {
+  const g = guruData[i];
+  document.getElementById('guruNama').value = g.nama;
+  document.getElementById('guruNip').value = g.nip;
+  document.getElementById('guruJabatan').value = g.jabatan;
+  document.getElementById('guruStatus').value = g.status;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* === HAPUS GURU === */
+function hapusGuru(i) {
+  const nama = guruData[i].nama;
+  if (!confirm(`Yakin ingin menghapus data guru: ${nama}?`)) return;
+  fetch(GOOGLE_SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({ type: "delete_teacher", nama })
+  }).then(() => {
+    alert("🗑️ Data guru berhasil dihapus!");
+    loadGuru();
+  });
+}
+
+/* === MUAT DATA SAAT LOGIN BERHASIL === */
+async function initAdmin() {
+  updateClock();
+  loadGuru();
+}
+<!-- === HALAMAN LAPORAN === -->
+<section id="page-laporan" class="hidden">
+  <div class="bg-white p-5 rounded shadow mb-6">
+    <h3 class="text-lg font-semibold text-blue-900 mb-3">Laporan Kehadiran Bulanan</h3>
+    <div class="flex items-center gap-3 mb-4">
+      <label>Pilih Bulan:</label>
+      <input type="month" id="bulanLaporan" class="border p-2 rounded" onchange="generateLaporanBulanan()">
+      <button onclick="exportExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">📥 Ekspor Excel</button>
+    </div>
+    <div class="overflow-auto">
+      <table id="tabelLaporan" class="w-full border-collapse border text-sm min-w-max"></table>
+    </div>
+    <div id="resumeLaporan" class="bg-blue-50 mt-5 p-4 rounded text-gray-700"></div>
+  </div>
+</section>
+
+<script>
+let kehadiranData = [];
+
+/* === LOAD DATA KEHADIRAN === */
+async function loadKehadiran() {
+  try {
+    const res = await fetch(GOOGLE_SCRIPT_URL + "?sheet=kehadiran");
+    const data = await res.json();
+    kehadiranData = data.slice(1).map(r => ({
+      nama: r[0], status: r[1], jam: r[2], tanggal: r[3], lokasi: r[4]
+    }));
+    hitungStatistikHarian();
+  } catch (e) {
+    console.error('Gagal memuat data kehadiran:', e);
+  }
+}
+
+/* === HITUNG STATISTIK HARI INI === */
+function hitungStatistikHarian() {
+  const today = new Date().toISOString().split('T')[0];
+  const hariIni = kehadiranData.filter(r => r.tanggal === today);
+  const totalHadir = hariIni.filter(r => r.status === "Hadir").length;
+  const totalLain = hariIni.filter(r => r.status !== "Hadir").length;
+  document.getElementById('totalHadir').textContent = totalHadir;
+  document.getElementById('totalLain').textContent = totalLain;
+  updateChartDashboard(hariIni);
+}
+
+/* === GRAFIK DASHBOARD === */
+function updateChartDashboard(data) {
+  const counts = { Hadir:0, Izin:0, Sakit:0, "Dinas Luar":0 };
+  data.forEach(r => counts[r.status]++);
+  const ctx = document.getElementById('chartDashboard').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(counts),
+      datasets: [{
+        label: 'Jumlah Guru',
+        data: Object.values(counts),
+        backgroundColor: ['#22c55e','#eab308','#ef4444','#3b82f6']
+      }]
+    },
+    options: { plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
+  });
+}
+
+/* === LAPORAN BULANAN === */
+function generateLaporanBulanan() {
+  const val = document.getElementById('bulanLaporan').value;
+  if (!val) return;
+  const [tahun, bulan] = val.split('-');
+  const hariDalamBulan = new Date(tahun, bulan, 0).getDate();
+  const namaGuru = guruData.map(g => g.nama);
+  const dataBulan = kehadiranData.filter(r => r.tanggal.startsWith(`${tahun}-${bulan}`));
+  let html = `<thead class='bg-gray-100'><tr><th class='border p-1'>Nama Guru</th>`;
+  for (let i = 1; i <= hariDalamBulan; i++) html += `<th class='border p-1 text-center'>${i}</th>`;
+  html += `</tr></thead><tbody>`;
+  let total = { Hadir:0, Izin:0, Sakit:0, "Dinas Luar":0 };
+  namaGuru.forEach(nama => {
+    html += `<tr><td class='border p-1 font-semibold'>${nama}</td>`;
+    for (let i = 1; i <= hariDalamBulan; i++) {
+      const tgl = `${tahun}-${bulan}-${String(i).padStart(2,'0')}`;
+      const abs = dataBulan.find(r => r.nama === nama && r.tanggal === tgl);
+      const s = abs ? abs.status[0] : '';
+      if (abs) total[abs.status]++;
+      html += `<td class='border text-center text-xs p-1'>${s}</td>`;
+    }
+    html += `</tr>`;
+  });
+  html += `</tbody>`;
+  document.getElementById('tabelLaporan').innerHTML = html;
+  const sum = total.Hadir + total.Izin + total.Sakit + total["Dinas Luar"];
+  document.getElementById('resumeLaporan').innerHTML = `
+    <h4 class='font-semibold text-blue-900 mb-2'>Resume Bulan ${bulan}-${tahun}</h4>
+    <p>Hadir: <b>${total.Hadir}</b> | Izin: <b>${total.Izin}</b> | Sakit: <b>${total.Sakit}</b> | Dinas Luar: <b>${total["Dinas Luar"]}</b></p>
+    <p>Total data: <b>${sum}</b> dari ${namaGuru.length * hariDalamBulan} kehadiran</p>`;
+}
+
+/* === EKSPOR KE EXCEL === */
+function exportExcel() {
+  const table = document.getElementById('tabelLaporan');
+  if (!table || !table.rows.length) {
+    alert("⚠️ Tidak ada data untuk diekspor!");
+    return;
+  }
+  const wb = XLSX.utils.table_to_book(table, {sheet: "Laporan Kehadiran"});
+  XLSX.writeFile(wb, "Laporan_Kehadiran_SDN_Muhara.xlsx");
+}
+
+/* === INISIALISASI ADMIN PANEL === */
+async function initAdmin() {
+  updateClock();
+  await loadGuru();
+  await loadKehadiran();
+}
+window.onload = updateClock;
+</script>
+
+</body>
+</html>
