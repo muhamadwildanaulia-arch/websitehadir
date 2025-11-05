@@ -5,207 +5,240 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aplikasi Kehadiran Guru SDN Muhara</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { background-color: #f9fafb; }
-    .active-tab { background-color: #2563eb; color: white; }
-    .tab-btn { cursor: pointer; }
-    .hidden { display: none; }
+    body { background-color: #f4f6f9; }
+    .tab-active { background-color: #1e3a8a; color: #fff; }
+    .tab-btn:hover { background-color: #2563eb; color: white; }
   </style>
 </head>
-<body class="font-sans text-gray-800">
 
-  <header class="bg-blue-600 text-white p-5 text-center shadow">
-    <h1 class="text-2xl font-bold">Aplikasi Kehadiran Guru SDN Muhara</h1>
-    <p id="current-date" class="text-sm"></p>
-    <div id="clock" class="text-xl font-mono mt-1"></div>
+<body class="font-sans text-gray-800">
+  <!-- HEADER -->
+  <header class="bg-blue-900 text-white p-5 shadow flex items-center justify-between">
+    <div class="flex items-center space-x-4">
+      <img src="[Ukuran asli] SD Negeri Muhara.png" alt="Logo SDN Muhara" class="h-20 w-auto rounded-md bg-white p-1">
+      <div>
+        <h1 class="text-2xl font-bold">Aplikasi Kehadiran Guru SDN Muhara</h1>
+        <p id="current-date" class="text-sm opacity-80"></p>
+      </div>
+    </div>
+    <div id="clock" class="text-2xl font-mono"></div>
   </header>
 
-  <nav class="flex justify-center bg-blue-100 shadow">
-    <div id="tab-kehadiran" class="tab-btn active-tab px-6 py-3" onclick="switchTab('kehadiran')">Kehadiran</div>
-    <div id="tab-guru" class="tab-btn px-6 py-3" onclick="switchTab('guru')">Data Guru</div>
-    <div id="tab-laporan" class="tab-btn px-6 py-3" onclick="switchTab('laporan')">Laporan</div>
+  <!-- NAV TAB -->
+  <nav class="flex justify-center bg-blue-800 text-white font-semibold shadow-md">
+    <button id="tab-kehadiran" class="tab-btn px-6 py-3 tab-active" onclick="switchTab('kehadiran')">Kehadiran</button>
+    <button id="tab-guru" class="tab-btn px-6 py-3" onclick="switchTab('guru')">Data Guru</button>
+    <button id="tab-laporan" class="tab-btn px-6 py-3" onclick="switchTab('laporan')">Laporan Bulanan</button>
   </nav>
 
-  <!-- === TAB KEHADIRAN === -->
+  <!-- TAB KEHADIRAN -->
   <section id="content-kehadiran" class="p-6">
-    <h2 class="text-xl font-semibold mb-4">Form Kehadiran Guru</h2>
-    <form id="attendance-form" class="space-y-3">
-      <select id="nama-guru-kehadiran" class="w-full border p-2 rounded" required>
-        <option value="">-- Pilih Guru --</option>
-      </select>
-      <select id="status-kehadiran" class="w-full border p-2 rounded" required>
-        <option value="Hadir">Hadir</option>
-        <option value="Izin">Izin</option>
-        <option value="Sakit">Sakit</option>
-      </select>
-      <input id="keterangan-lokasi" type="text" class="w-full border p-2 rounded" placeholder="Keterangan lokasi (opsional)">
-      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Simpan Kehadiran</button>
+    <h2 class="text-xl font-semibold mb-4 text-blue-900">Form Kehadiran Guru</h2>
+    <form id="attendance-form" class="grid md:grid-cols-2 gap-3 bg-white p-5 rounded-lg shadow">
+      <div>
+        <label class="font-semibold">Nama Guru</label>
+        <select id="nama-guru-kehadiran" class="w-full border p-2 rounded" required>
+          <option value="">-- Pilih Guru --</option>
+        </select>
+      </div>
+      <div>
+        <label class="font-semibold">Status Kehadiran</label>
+        <select id="status-kehadiran" class="w-full border p-2 rounded" required>
+          <option value="Hadir">Hadir</option>
+          <option value="Izin">Izin</option>
+          <option value="Sakit">Sakit</option>
+          <option value="Dinas Luar">Dinas Luar</option>
+        </select>
+      </div>
+      <div class="md:col-span-2">
+        <label class="font-semibold">Keterangan Lokasi (otomatis)</label>
+        <input id="keterangan-lokasi" type="text" class="w-full border p-2 rounded" readonly placeholder="Menentukan lokasi...">
+      </div>
+      <div class="md:col-span-2 text-center">
+        <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-lg mt-2">Simpan Kehadiran</button>
+      </div>
     </form>
 
-    <h3 class="text-lg font-semibold mt-8 mb-2">Daftar Kehadiran Hari Ini</h3>
-    <table class="w-full border-collapse border text-sm">
-      <thead class="bg-gray-200">
-        <tr>
-          <th class="border p-2">Nama Guru</th>
-          <th class="border p-2">Status</th>
-          <th class="border p-2">Jam Hadir</th>
-          <th class="border p-2">Lokasi</th>
-          <th class="border p-2">Tanggal</th>
-        </tr>
-      </thead>
-      <tbody id="attendance-list"></tbody>
-    </table>
-  </section>
+    <!-- GRAFIK KEHADIRAN HARIAN -->
+    <div class="bg-white mt-8 p-5 rounded-lg shadow">
+      <h3 class="text-lg font-semibold text-blue-900 mb-3">Grafik Kehadiran Hari Ini</h3>
+      <canvas id="dailyChart" height="100"></canvas>
+    </div>
 
-  <!-- === TAB DATA GURU === -->
+    <!-- TABEL KEHADIRAN -->
+    <div class="bg-white mt-8 p-5 rounded-lg shadow">
+      <h3 class="text-lg font-semibold text-blue-900 mb-3">Daftar Kehadiran Hari Ini</h3>
+      <table class="w-full border-collapse border text-sm">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="border p-2">Nama Guru</th>
+            <th class="border p-2">Status</th>
+            <th class="border p-2">Jam Hadir</th>
+            <th class="border p-2">Lokasi</th>
+            <th class="border p-2">Tanggal</th>
+          </tr>
+        </thead>
+        <tbody id="attendance-list"></tbody>
+      </table>
+    </div>
+  </section>
+  <!-- TAB DATA GURU -->
   <section id="content-guru" class="hidden p-6">
-    <h2 class="text-xl font-semibold mb-4">Manajemen Data Guru</h2>
-    <form id="guru-form" class="grid md:grid-cols-2 gap-3">
+    <h2 class="text-xl font-semibold mb-4 text-blue-900">Manajemen Data Guru</h2>
+
+    <form id="guru-form" class="grid md:grid-cols-2 gap-3 bg-white p-5 rounded-lg shadow">
       <input id="nama-guru" type="text" class="border p-2 rounded" placeholder="Nama Guru" required>
       <input id="nip-guru" type="text" class="border p-2 rounded" placeholder="NIP">
       <input id="jabatan-guru" type="text" class="border p-2 rounded" placeholder="Jabatan">
       <select id="status-kepegawaian" class="border p-2 rounded">
         <option value="PNS">PNS</option>
-        <option value="Non PNS">Non PNS</option>
+        <option value="PPPK">PPPK</option>
+        <option value="Honorer">Honorer</option>
       </select>
-      <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 md:col-span-2">Tambah / Update Guru</button>
+      <button type="submit" class="bg-green-700 hover:bg-green-800 text-white px-6 py-2 rounded-lg md:col-span-2 mt-2">Tambah / Update Guru</button>
     </form>
 
-    <h3 class="text-lg font-semibold mt-8 mb-2">Daftar Guru</h3>
-    <table class="w-full border-collapse border text-sm">
-      <thead class="bg-gray-200">
-        <tr>
-          <th class="border p-2">Nama Guru</th>
-          <th class="border p-2">NIP</th>
-          <th class="border p-2">Jabatan</th>
-          <th class="border p-2">Status</th>
-          <th class="border p-2">Aksi</th>
-        </tr>
-      </thead>
-      <tbody id="guru-list"></tbody>
-    </table>
+    <div class="bg-white mt-8 p-5 rounded-lg shadow">
+      <h3 class="text-lg font-semibold text-blue-900 mb-3">Daftar Guru</h3>
+      <table class="w-full border-collapse border text-sm">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="border p-2">Nama Guru</th>
+            <th class="border p-2">NIP</th>
+            <th class="border p-2">Jabatan</th>
+            <th class="border p-2">Status</th>
+            <th class="border p-2">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="guru-list"></tbody>
+      </table>
+    </div>
   </section>
 
-  <!-- === TAB LAPORAN === -->
+  <!-- TAB LAPORAN BULANAN -->
   <section id="content-laporan" class="hidden p-6">
-    <h2 class="text-xl font-semibold mb-4">Laporan Kehadiran</h2>
-    <p class="text-sm mb-3 text-gray-500">Menampilkan seluruh data kehadiran dari Google Sheet.</p>
-    <table class="w-full border-collapse border text-sm">
-      <thead class="bg-gray-200">
-        <tr>
-          <th class="border p-2">Nama Guru</th>
-          <th class="border p-2">Status</th>
-          <th class="border p-2">Jam Hadir</th>
-          <th class="border p-2">Tanggal</th>
-          <th class="border p-2">Lokasi</th>
-        </tr>
-      </thead>
-      <tbody id="laporan-list"></tbody>
-    </table>
-  </section>
+    <h2 class="text-xl font-semibold mb-4 text-blue-900">Laporan Bulanan</h2>
+    <div class="bg-white p-5 rounded-lg shadow">
+      <label class="font-semibold">Pilih Bulan:</label>
+      <input type="month" id="bulan-laporan" class="border p-2 rounded ml-2" onchange="generateMonthlyReport()">
+    </div>
 
+    <div class="bg-white mt-5 p-5 rounded-lg shadow overflow-auto">
+      <h3 class="text-lg font-semibold text-blue-900 mb-3">Rekap Kehadiran Bulan Ini</h3>
+      <table id="tabel-laporan" class="w-full border-collapse border text-sm min-w-max"></table>
+    </div>
+
+    <div id="resume-laporan" class="bg-blue-50 mt-6 p-5 rounded-lg shadow text-gray-800"></div>
+  </section>
 <script>
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKj5ohfsNaLRJ83pzSyz8CykGzl_Sw7FEMW4TkDmJErsh-X72hZCC9V8YA0S7YmWmk/exec";
+
 let teachers = [];
 let attendanceRecords = [];
+let dailyChart;
 
-/* === FUNGSI UMUM === */
+/* === FUNGSI JAM DIGITAL === */
 function updateClock() {
   const now = new Date();
-  document.getElementById('clock').textContent =
-    now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  document.getElementById('clock').textContent = now.toLocaleTimeString('id-ID', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
 }
 
+/* === GANTI TAB === */
 function switchTab(tab) {
   document.querySelectorAll('section[id^="content-"]').forEach(el => el.classList.add('hidden'));
-  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active-tab'));
+  document.querySelectorAll('nav button').forEach(el => el.classList.remove('tab-active'));
   document.getElementById(`content-${tab}`).classList.remove('hidden');
-  document.getElementById(`tab-${tab}`).classList.add('active-tab');
+  document.getElementById(`tab-${tab}`).classList.add('tab-active');
 }
 
-/* === LOAD DATA === */
+/* === LOAD DATA DARI GOOGLE SHEET === */
 async function loadTeachers() {
-  const res = await fetch(GOOGLE_SCRIPT_URL + '?sheet=guru');
-  const data = await res.json();
-  teachers = data.slice(1).map(r => ({ nama_guru: r[0], nip: r[1], jabatan: r[2], status: r[3] }));
-  updateTeacherTable();
-  updateTeacherDropdown();
+  try {
+    const res = await fetch(GOOGLE_SCRIPT_URL + "?sheet=guru");
+    const data = await res.json();
+    teachers = data.slice(1).map(r => ({
+      nama_guru: r[0], nip: r[1], jabatan: r[2], status: r[3]
+    }));
+    updateTeacherList();
+    updateTeacherDropdown();
+  } catch (e) { console.error(e); }
 }
 
 async function loadAttendance() {
-  const res = await fetch(GOOGLE_SCRIPT_URL + '?sheet=kehadiran');
-  const data = await res.json();
-  attendanceRecords = data.slice(1).map(r => ({ nama: r[0], status: r[1], jam: r[2], tgl: r[3], lokasi: r[4] }));
-  updateAttendanceToday();
-  updateLaporan();
+  try {
+    const res = await fetch(GOOGLE_SCRIPT_URL + "?sheet=kehadiran");
+    const data = await res.json();
+    attendanceRecords = data.slice(1).map(r => ({
+      nama_guru: r[0], status: r[1], jam: r[2], tanggal: r[3], lokasi: r[4]
+    }));
+    updateAttendanceToday();
+    updateChart();
+  } catch (e) { console.error(e); }
 }
 
 /* === SIMPAN DATA === */
 async function saveTeacher(d) {
   await fetch(GOOGLE_SCRIPT_URL, {
-    method: 'POST',
-    body: JSON.stringify({ type: 'teacher', data: d })
+    method: 'POST', body: JSON.stringify({ type: 'teacher', data: d })
   });
 }
 
 async function saveAttendance(d) {
   await fetch(GOOGLE_SCRIPT_URL, {
-    method: 'POST',
-    body: JSON.stringify({ type: 'attendance', data: d })
+    method: 'POST', body: JSON.stringify({ type: 'attendance', data: d })
   });
 }
 
 /* === UPDATE UI === */
-function updateTeacherTable() {
+function updateTeacherList() {
   const tbody = document.getElementById('guru-list');
-  if (teachers.length === 0) return tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4">Belum ada data</td></tr>';
+  if (!teachers.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4">Belum ada data</td></tr>`;
+    return;
+  }
   tbody.innerHTML = teachers.map((t, i) => `
     <tr>
       <td class="border p-2">${t.nama_guru}</td>
       <td class="border p-2">${t.nip}</td>
       <td class="border p-2">${t.jabatan}</td>
       <td class="border p-2">${t.status}</td>
-      <td class="border p-2">
-        <button class="text-blue-600" onclick="editGuru(${i})">Edit</button>
-      </td>
+      <td class="border p-2"><button onclick="editGuru(${i})" class="text-blue-700">Edit</button></td>
     </tr>`).join('');
 }
 
 function updateTeacherDropdown() {
-  const sel = document.getElementById('nama-guru-kehadiran');
-  sel.innerHTML = '<option value="">-- Pilih Guru --</option>' +
-    teachers.map(t => `<option>${t.nama_guru}</option>`).join('');
+  const select = document.getElementById('nama-guru-kehadiran');
+  select.innerHTML = '<option value="">-- Pilih Guru --</option>';
+  teachers.forEach(t => {
+    const opt = document.createElement('option');
+    opt.textContent = t.nama_guru;
+    select.appendChild(opt);
+  });
 }
 
 function updateAttendanceToday() {
   const tbody = document.getElementById('attendance-list');
   const today = new Date().toISOString().split('T')[0];
-  const list = attendanceRecords.filter(r => r.tgl === today);
-  if (!list.length) return tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4">Belum ada data hari ini</td></tr>';
-  tbody.innerHTML = list.map(r => `
+  const todayData = attendanceRecords.filter(r => r.tanggal === today);
+  if (!todayData.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4">Belum ada kehadiran hari ini</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = todayData.map(r => `
     <tr>
-      <td class="border p-2">${r.nama}</td>
+      <td class="border p-2">${r.nama_guru}</td>
       <td class="border p-2">${r.status}</td>
       <td class="border p-2">${r.jam}</td>
       <td class="border p-2">${r.lokasi}</td>
-      <td class="border p-2">${r.tgl}</td>
+      <td class="border p-2">${r.tanggal}</td>
     </tr>`).join('');
 }
 
-function updateLaporan() {
-  const tbody = document.getElementById('laporan-list');
-  if (!attendanceRecords.length) return tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4">Belum ada data</td></tr>';
-  tbody.innerHTML = attendanceRecords.map(r => `
-    <tr>
-      <td class="border p-2">${r.nama}</td>
-      <td class="border p-2">${r.status}</td>
-      <td class="border p-2">${r.jam}</td>
-      <td class="border p-2">${r.tgl}</td>
-      <td class="border p-2">${r.lokasi}</td>
-    </tr>`).join('');
-}
-
-/* === EDIT DATA GURU === */
+/* === EDIT GURU === */
 function editGuru(i) {
   const g = teachers[i];
   document.getElementById('nama-guru').value = g.nama_guru;
@@ -213,6 +246,77 @@ function editGuru(i) {
   document.getElementById('jabatan-guru').value = g.jabatan;
   document.getElementById('status-kepegawaian').value = g.status;
   switchTab('guru');
+}
+
+/* === GRAFIK HARIAN === */
+function updateChart() {
+  const today = new Date().toISOString().split('T')[0];
+  const todayData = attendanceRecords.filter(r => r.tanggal === today);
+  const counts = { Hadir: 0, Izin: 0, Sakit: 0, "Dinas Luar": 0 };
+  todayData.forEach(r => counts[r.status]++);
+  const ctx = document.getElementById('dailyChart').getContext('2d');
+  if (dailyChart) dailyChart.destroy();
+  dailyChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Hadir', 'Izin', 'Sakit', 'Dinas Luar'],
+      datasets: [{
+        label: 'Jumlah Guru',
+        data: [counts.Hadir, counts.Izin, counts.Sakit, counts["Dinas Luar"]],
+        backgroundColor: ['#22c55e','#eab308','#ef4444','#3b82f6']
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } } }
+  });
+}
+
+/* === LAPORAN BULANAN === */
+function generateMonthlyReport() {
+  const bulanInput = document.getElementById('bulan-laporan').value;
+  if (!bulanInput) return;
+  const [tahun, bulan] = bulanInput.split('-');
+  const hariDalamBulan = new Date(tahun, bulan, 0).getDate();
+  const guruList = teachers.map(t => t.nama_guru);
+  const dataBulan = attendanceRecords.filter(r => r.tanggal.startsWith(`${tahun}-${bulan}`));
+  let html = `<thead class='bg-gray-100'><tr><th class='border p-1'>Nama Guru</th>`;
+  for (let i = 1; i <= hariDalamBulan; i++) html += `<th class='border p-1'>${i}</th>`;
+  html += `</tr></thead><tbody>`;
+  let total = { Hadir:0, Izin:0, Sakit:0, "Dinas Luar":0 };
+  guruList.forEach(nama => {
+    html += `<tr><td class='border p-1 font-semibold'>${nama}</td>`;
+    for (let i = 1; i <= hariDalamBulan; i++) {
+      const tanggal = `${tahun}-${bulan}-${String(i).padStart(2,'0')}`;
+      const abs = dataBulan.find(r => r.nama_guru===nama && r.tanggal===tanggal);
+      const s = abs ? abs.status[0] : '';
+      if (abs) total[abs.status]++;
+      html += `<td class='border text-center text-xs p-1'>${s}</td>`;
+    }
+    html += `</tr>`;
+  });
+  html += `</tbody>`;
+  document.getElementById('tabel-laporan').innerHTML = html;
+  const sum = total.Hadir + total.Izin + total.Sakit + total["Dinas Luar"];
+  document.getElementById('resume-laporan').innerHTML = `
+    <h4 class='font-semibold text-blue-900 mb-2'>Resume Kehadiran Bulan ${bulan}-${tahun}</h4>
+    <p>Hadir: <b>${total.Hadir}</b> | Izin: <b>${total.Izin}</b> | Sakit: <b>${total.Sakit}</b> | Dinas Luar: <b>${total["Dinas Luar"]}</b></p>
+    <p>Total Kehadiran: <b>${sum}</b> dari ${guruList.length * hariDalamBulan} data</p>`;
+}
+
+/* === GPS & NAMA LOKASI === */
+function getLocation() {
+  const locInput = document.getElementById('keterangan-lokasi');
+  if (!navigator.geolocation) {
+    locInput.value = "Browser tidak mendukung GPS";
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const lat = pos.coords.latitude, lon = pos.coords.longitude;
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+      const data = await res.json();
+      locInput.value = data.display_name || `${lat}, ${lon}`;
+    } catch { locInput.value = `${lat}, ${lon}`; }
+  }, () => locInput.value = "Gagal mengambil lokasi");
 }
 
 /* === EVENT FORM === */
@@ -226,7 +330,7 @@ document.getElementById('guru-form').addEventListener('submit', async e => {
     waktu_input: new Date().toLocaleString('id-ID')
   };
   await saveTeacher(data);
-  alert('✅ Data guru disimpan');
+  alert('✅ Data guru berhasil disimpan');
   e.target.reset();
   loadTeachers();
 });
@@ -249,11 +353,11 @@ document.getElementById('attendance-form').addEventListener('submit', async e =>
 
 /* === INISIALISASI === */
 window.onload = async () => {
-  document.getElementById('current-date').textContent = new Date().toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-  updateClock();
-  setInterval(updateClock, 1000);
-  await loadTeachers();
-  await loadAttendance();
+  document.getElementById('current-date').textContent =
+    new Date().toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  updateClock(); setInterval(updateClock, 1000);
+  getLocation();
+  await loadTeachers(); await loadAttendance();
 };
 </script>
 
