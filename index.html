@@ -577,25 +577,13 @@
             school_name: "SDN Muhara"
         };
 <script>
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKj5ohfsNaLRJ83pzSyz8CykGzl_Sw7FEMW4TkDmJErsh-X72hZCC9V8YA0S7YmWmk/exec";
+/* === KONFIGURASI === */
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKj5ohfsNaLRJ83pzSyz8CykGzl_Sw7FEMW4TkDmJErsh-X72hZCC9V8YA0S7YmWmk/exec"; // Ganti dengan URL Apps Script kamu
 
 let teachers = [];
 let attendanceRecords = [];
 
-// === FUNGSI TAB ===
-function switchTab(tabName) {
-  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-  document.querySelectorAll('[id^="tab-"]').forEach(tab => {
-    tab.classList.remove('active');
-    tab.className = 'modern-tab flex-1 py-5 px-8 text-center font-semibold text-gray-600';
-  });
-  document.getElementById(`content-${tabName}`).classList.add('active');
-  const activeTab = document.getElementById(`tab-${tabName}`);
-  activeTab.classList.add('active');
-  activeTab.className = 'modern-tab active flex-1 py-5 px-8 text-center font-semibold text-white';
-}
-
-// === JAM DIGITAL ===
+/* === JAM DIGITAL === */
 function updateClock() {
   const now = new Date();
   let hours = now.getHours();
@@ -609,7 +597,20 @@ function updateClock() {
   document.getElementById('ampm').textContent = ampm;
 }
 
-// === LOAD DATA DARI GOOGLE SHEET ===
+/* === TAB NAVIGASI === */
+function switchTab(tabName) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('[id^="tab-"]').forEach(tab => {
+    tab.classList.remove('active');
+    tab.className = 'modern-tab flex-1 py-5 px-8 text-center font-semibold text-gray-600';
+  });
+  document.getElementById(`content-${tabName}`).classList.add('active');
+  const activeTab = document.getElementById(`tab-${tabName}`);
+  activeTab.classList.add('active');
+  activeTab.className = 'modern-tab active flex-1 py-5 px-8 text-center font-semibold text-white';
+}
+
+/* === LOAD DATA DARI GOOGLE SHEET === */
 async function loadTeachersFromSheet() {
   try {
     const res = await fetch(GOOGLE_SCRIPT_URL + "?sheet=guru");
@@ -644,7 +645,7 @@ async function loadAttendanceFromSheet() {
   }
 }
 
-// === SIMPAN DATA KE GOOGLE SHEET ===
+/* === SIMPAN DATA KE GOOGLE SHEET === */
 async function saveTeacherToSheet(teacherData) {
   await fetch(GOOGLE_SCRIPT_URL, {
     method: "POST",
@@ -659,10 +660,10 @@ async function saveAttendanceToSheet(attendanceData) {
   });
 }
 
-// === UPDATE UI ===
+/* === UPDATE UI === */
 function updateTeacherList() {
   const tbody = document.getElementById('guru-list');
-  if (teachers.length === 0) {
+  if (!teachers.length) {
     tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-gray-500">Belum ada data guru</td></tr>';
     return;
   }
@@ -672,7 +673,7 @@ function updateTeacherList() {
       <td class="p-6">${t.nip}</td>
       <td class="p-6">${t.jabatan}</td>
       <td class="p-6">${t.status_kepegawaian}</td>
-      <td class="p-6">—</td>
+      <td class="p-6">-</td>
     </tr>
   `).join('');
 }
@@ -692,7 +693,7 @@ function updateAttendanceList() {
   const tbody = document.getElementById('attendance-list');
   const today = new Date().toISOString().split('T')[0];
   const todayList = attendanceRecords.filter(r => r.tanggal === today);
-  if (todayList.length === 0) {
+  if (!todayList.length) {
     tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-gray-500">Belum ada kehadiran hari ini</td></tr>';
     return;
   }
@@ -707,54 +708,64 @@ function updateAttendanceList() {
   `).join('');
 }
 
-// === EVENT FORM ===
-document.getElementById('guru-form').addEventListener('submit', async e => {
-  e.preventDefault();
-  const data = {
-    nama_guru: document.getElementById('nama-guru').value,
-    nip: document.getElementById('nip-guru').value,
-    jabatan: document.getElementById('jabatan-guru').value,
-    status_kepegawaian: document.getElementById('status-kepegawaian').value,
-    waktu_input: new Date().toLocaleString('id-ID')
-  };
-  await saveTeacherToSheet(data);
-  alert('Guru berhasil disimpan ke Google Sheet');
-  document.getElementById('guru-form').reset();
-  await loadTeachersFromSheet();
+/* === EVENT FORM === */
+document.addEventListener("DOMContentLoaded", () => {
+  // Form Guru
+  document.getElementById('guru-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const data = {
+      nama_guru: document.getElementById('nama-guru').value,
+      nip: document.getElementById('nip-guru').value,
+      jabatan: document.getElementById('jabatan-guru').value,
+      status_kepegawaian: document.getElementById('status-kepegawaian').value,
+      waktu_input: new Date().toLocaleString('id-ID')
+    };
+    await saveTeacherToSheet(data);
+    alert('✅ Data Guru berhasil disimpan ke Google Sheet');
+    document.getElementById('guru-form').reset();
+    await loadTeachersFromSheet();
+  });
+
+  // Form Kehadiran
+  document.getElementById('attendance-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const now = new Date();
+    const data = {
+      nama_guru: document.getElementById('nama-guru-kehadiran').value,
+      status: document.getElementById('status-kehadiran').value,
+      jam_hadir: now.toLocaleTimeString('id-ID'),
+      tanggal: now.toISOString().split('T')[0],
+      keterangan_lokasi: document.getElementById('keterangan-lokasi').value
+    };
+    await saveAttendanceToSheet(data);
+    alert('✅ Kehadiran berhasil disimpan ke Google Sheet');
+    document.getElementById('attendance-form').reset();
+    await loadAttendanceFromSheet();
+  });
+
+  // Jalankan semua fungsi awal
+  initializeApp();
 });
 
-document.getElementById('attendance-form').addEventListener('submit', async e => {
-  e.preventDefault();
-  const now = new Date();
-  const data = {
-    nama_guru: document.getElementById('nama-guru-kehadiran').value,
-    status: document.getElementById('status-kehadiran').value,
-    jam_hadir: now.toLocaleTimeString('id-ID'),
-    tanggal: now.toISOString().split('T')[0],
-    keterangan_lokasi: document.getElementById('keterangan-lokasi').value
-  };
-  await saveAttendanceToSheet(data);
-  alert('Kehadiran berhasil disimpan ke Google Sheet');
-  document.getElementById('attendance-form').reset();
-  await loadAttendanceFromSheet();
-});
-
-// === INISIALISASI APLIKASI ===
+/* === INISIALISASI === */
 async function initializeApp() {
+  // Tampilkan tanggal
   document.getElementById('current-date').textContent = new Date().toLocaleDateString('id-ID', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   });
+  // Jalankan jam
   updateClock();
   setInterval(updateClock, 1000);
+  // Load data
   await loadTeachersFromSheet();
   await loadAttendanceFromSheet();
 }
-
-window.onload = initializeApp;
 </script>
+
 
 </body>
 
 </html>
+
 
 
