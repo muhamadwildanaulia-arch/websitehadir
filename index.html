@@ -1,771 +1,261 @@
-<!doctype html>
-<html lang="id" class="h-full">
- <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aplikasi Kehadiran Guru SDN Muhara</title>
-  <script src="https://cdn.tailwindcss.com"></script><!-- SDK scripts removed for Netlify deployment -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
-        body {
-            box-sizing: border-box;
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            min-height: 100%;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        .loading {
-            opacity: 0.5;
-            pointer-events: none;
-        }
-        .modern-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-        .modern-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-        }
-        .glass-input {
-            background: rgba(255, 255, 255, 0.9);
-            border: 2px solid rgba(220, 38, 38, 0.2);
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(5px);
-        }
-        .glass-input:focus {
-            border-color: #dc2626;
-            box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1);
-            background: rgba(255, 255, 255, 1);
-        }
-        .gradient-button {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            border-radius: 12px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            border: none;
-            position: relative;
-            overflow: hidden;
-        }
-        .gradient-button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-        .gradient-button:hover::before {
-            left: 100%;
-        }
-        .gradient-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4);
-        }
-        .modern-tab {
-            border-radius: 12px 12px 0 0;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        .modern-tab.active {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            color: white;
-            transform: translateY(-2px);
-        }
-        .modern-tab:hover:not(.active) {
-            background: rgba(220, 38, 38, 0.1);
-            transform: translateY(-1px);
-        }
-        .status-badge {
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 0.4rem 0.8rem;
-            border-radius: 20px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .chart-container {
-            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-        .header-gradient {
-            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #f8fafc 100%);
-            position: relative;
-            overflow: hidden;
-        }
-        .floating-animation {
-            animation: float 6s ease-in-out infinite;
-        }
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-        .pulse-animation {
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        .table-modern {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-        .table-modern th {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            color: white;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .table-modern tr:hover {
-            background: rgba(220, 38, 38, 0.05);
-            transform: scale(1.01);
-            transition: all 0.2s ease;
-        }
-        .icon-bounce {
-            display: inline-block;
-            animation: bounce 2s infinite;
-        }
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-5px); }
-            60% { transform: translateY(-3px); }
-        }
-        .gradient-text {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-weight: 700;
-        }
-        .digital-clock {
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-        }
-        .digital-clock:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-        }
-        .time-segment {
-            position: relative;
-        }
-        .time-segment::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(45deg, rgba(255,255,255,0.1), transparent);
-            border-radius: 8px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        .time-segment:hover::before {
-            opacity: 1;
-        }
-        .time-separator {
-            animation: blink 1s infinite;
-        }
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0.3; }
-        }
-        .stats-card {
-            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 16px;
-            transition: all 0.3s ease;
-        }
-        .stats-card:hover {
-            transform: translateY(-5px) scale(1.02);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        }
-    </style>
-  <style>@view-transition { navigation: auto; }</style>
-  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
-  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
- </head>
- <body class="h-full font-sans">
-  <div class="min-h-full p-4"><!-- Header -->
-   <div id="header-container" class="modern-card header-gradient mb-8 p-8 relative overflow-hidden floating-animation"><!-- Upload Controls -->
-    <div class="relative z-10 mb-6 flex justify-center">
-     <div class="flex items-center gap-2"><label for="logo-upload" class="gradient-button text-white px-6 py-3 cursor-pointer text-sm font-semibold"> <span class="icon-bounce">📸</span> Upload Logo </label> <input type="file" id="logo-upload" accept="image/*" class="hidden"> <button id="remove-logo" class="gradient-button bg-red-500 text-white px-4 py-3 text-sm hidden"> ✕ </button>
-     </div>
-    </div><!-- Header Content -->
-    <div class="relative z-10 flex items-center justify-center gap-8"><!-- Logo -->
-     <div id="logo-container" class="hidden floating-animation"><img id="school-logo" class="w-20 h-20 object-contain rounded-full border-4 border-white shadow-lg" alt="Logo Sekolah">
-     </div><!-- Title and School Info -->
-     <div class="text-center">
-      <h1 id="app-title" class="text-3xl font-bold text-red-600 mb-3 drop-shadow-lg">Aplikasi Kehadiran Guru SDN Muhara</h1>
-      <p id="school-name" class="text-red-700 text-xl font-semibold">SDN Muhara</p>
-      <p class="text-sm text-gray-600 mt-3 pulse-animation" id="current-date"></p><!-- Digital Clock -->
-      <div class="mt-6 flex justify-center">
-       <div class="digital-clock bg-red-600 bg-opacity-90 backdrop-filter backdrop-blur-lg rounded-2xl px-8 py-4 border border-red-500 border-opacity-30">
-        <div class="flex items-center justify-center space-x-2">
-         <div class="time-segment"><span id="hours" class="text-4xl font-mono font-bold text-white tracking-wider">00</span>
-         </div>
-         <div class="time-separator"><span id="separator1" class="text-4xl font-mono font-bold text-white opacity-75">:</span>
-         </div>
-         <div class="time-segment"><span id="minutes" class="text-4xl font-mono font-bold text-white tracking-wider">00</span>
-         </div>
-         <div class="time-separator"><span id="separator2" class="text-4xl font-mono font-bold text-white opacity-75">:</span>
-         </div>
-         <div class="time-segment"><span id="seconds" class="text-2xl font-mono font-bold text-white tracking-wider opacity-90">00</span>
-         </div>
-         <div class="ml-3"><span id="ampm" class="text-lg font-semibold text-white opacity-80">AM</span>
-         </div>
-        </div>
-        <div class="text-center mt-2"><span class="text-xs text-white opacity-60 font-medium tracking-wide">WAKTU INDONESIA BARAT</span>
-        </div>
-       </div>
-      </div>
-     </div>
-    </div>
-   </div><!-- Navigation Tabs -->
-   <div class="modern-card mb-6 overflow-hidden">
-    <div class="flex"><button onclick="switchTab('kehadiran')" id="tab-kehadiran" class="modern-tab active flex-1 py-5 px-8 text-center font-semibold text-white"> <span class="icon-bounce">✅</span> Kehadiran </button> <button onclick="switchTab('guru')" id="tab-guru" class="modern-tab flex-1 py-5 px-8 text-center font-semibold text-gray-600"> <span class="icon-bounce">👥</span> Data Guru </button> <button onclick="switchTab('laporan')" id="tab-laporan" class="modern-tab flex-1 py-5 px-8 text-center font-semibold text-gray-600"> <span class="icon-bounce">📊</span> Laporan </button>
-    </div>
-   </div><!-- Tab Content -->
-   <div class="modern-card p-8"><!-- Tab Kehadiran -->
-    <div id="content-kehadiran" class="tab-content active">
-     <h2 class="text-2xl font-bold gradient-text mb-8 text-center">📝 Input Kehadiran Guru</h2>
-     <form id="attendance-form" class="space-y-8">
-      <div class="grid md:grid-cols-2 gap-8">
-       <div><label for="nama-guru-kehadiran" class="block text-sm font-semibold text-gray-700 mb-3">👤 Nama Guru</label> <select id="nama-guru-kehadiran" required class="glass-input w-full p-4 focus:outline-none text-gray-700 font-medium"> <option value="">-- Pilih Guru --</option> </select>
-       </div>
-       <div><label for="status-kehadiran" class="block text-sm font-semibold text-gray-700 mb-3">📊 Status Kehadiran</label> <select id="status-kehadiran" required class="glass-input w-full p-4 focus:outline-none text-gray-700 font-medium"> <option value="">-- Pilih Status --</option> <option value="Hadir">✅ Hadir</option> <option value="Sakit">🤒 Sakit</option> <option value="Izin">📝 Izin</option> <option value="Dinas Luar">🚗 Dinas Luar</option> </select>
-       </div>
-      </div>
-      <div><label for="keterangan-lokasi" class="block text-sm font-semibold text-gray-700 mb-3">📝 Keterangan Lokasi</label>
-       <div class="relative"><input type="text" id="keterangan-lokasi" required class="glass-input w-full p-4 pr-12 focus:outline-none text-gray-700 font-medium" placeholder="Tulis lokasi atau klik GPS untuk lokasi otomatis"> <button type="button" id="get-gps-location" class="absolute right-2 top-1/2 transform -translate-y-1/2 gradient-button text-white px-3 py-2 text-sm rounded-lg" title="Dapatkan Lokasi GPS"> 🌍 GPS </button>
-       </div>
-       <div class="mt-2 text-xs text-gray-500">
-        💡 Tulis lokasi secara manual atau klik tombol GPS untuk mendapatkan lokasi otomatis
-       </div>
-      </div><!-- GPS Location Display -->
-      <div id="gps-info" class="hidden mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-       <h4 class="font-semibold text-blue-800 mb-2">🌍 Informasi GPS</h4>
-       <div class="grid md:grid-cols-2 gap-4 text-sm">
-        <div><span class="font-medium text-blue-700">📍 Koordinat:</span>
-         <div id="gps-coordinates" class="text-blue-600 font-mono">
-          -
-         </div>
-        </div>
-        <div><span class="font-medium text-blue-700">📍 Alamat:</span>
-         <div id="gps-address" class="text-blue-600">
-          Sedang mencari alamat...
-         </div>
-        </div>
-        <div><span class="font-medium text-blue-700">⏰ Waktu:</span>
-         <div id="gps-time" class="text-blue-600">
-          -
-         </div>
-        </div>
-        <div><span class="font-medium text-blue-700">🎯 Akurasi:</span>
-         <div id="gps-accuracy" class="text-blue-600">
-          -
-         </div>
-        </div>
-       </div>
-       <div class="mt-3 flex gap-2"><button type="button" id="refresh-gps" class="gradient-button text-white px-4 py-2 text-sm"> 🔄 Refresh GPS </button> <button type="button" id="use-gps-location" class="gradient-button bg-green-500 text-white px-4 py-2 text-sm"> ✅ Gunakan Lokasi Ini </button> <button type="button" id="close-gps" class="gradient-button bg-gray-500 text-white px-4 py-2 text-sm"> ❌ Tutup </button>
-       </div>
-      </div><button type="submit" id="submit-attendance" class="gradient-button w-full text-white py-4 px-8 font-bold text-lg"> 💾 Simpan Kehadiran </button>
-     </form><!-- Grafik Kehadiran -->
-     <div class="mt-16 grid md:grid-cols-2 gap-8"><!-- Grafik Donut -->
-      <div class="chart-container p-8 floating-animation">
-       <h3 class="text-xl font-bold gradient-text mb-8 text-center">📊 Statistik Kehadiran Hari Ini</h3>
-       <div class="flex items-center justify-center">
-        <div class="relative w-48 h-48">
-         <svg class="w-48 h-48 transform -rotate-90" viewbox="0 0 100 100"><!-- Background circle --> <circle cx="50" cy="50" r="40" stroke="#e5e7eb" stroke-width="8" fill="none" /> <!-- Hadir --> <circle id="chart-hadir" cx="50" cy="50" r="40" stroke="#10b981" stroke-width="8" fill="none" stroke-dasharray="0 251.2" stroke-linecap="round" /> <!-- Sakit --> <circle id="chart-sakit" cx="50" cy="50" r="40" stroke="#ef4444" stroke-width="8" fill="none" stroke-dasharray="0 251.2" stroke-linecap="round" /> <!-- Izin --> <circle id="chart-izin" cx="50" cy="50" r="40" stroke="#f59e0b" stroke-width="8" fill="none" stroke-dasharray="0 251.2" stroke-linecap="round" /> <!-- Dinas Luar --> <circle id="chart-dinas" cx="50" cy="50" r="40" stroke="#3b82f6" stroke-width="8" fill="none" stroke-dasharray="0 251.2" stroke-linecap="round" />
-         </svg>
-         <div class="absolute inset-0 flex items-center justify-center">
-          <div class="text-center">
-           <div id="total-attendance" class="text-2xl font-bold text-gray-800">
-            0
-           </div>
-           <div class="text-sm text-gray-600">
-            Total
-           </div>
-          </div>
-         </div>
-        </div>
-       </div><!-- Legend -->
-       <div class="mt-6 grid grid-cols-2 gap-3 text-sm">
-        <div class="flex items-center">
-         <div class="w-2 h-2 bg-gray-800 rounded-full mr-3"></div><span class="text-gray-600">Hadir: <span id="legend-hadir" class="font-medium text-gray-900">0</span></span>
-        </div>
-        <div class="flex items-center">
-         <div class="w-2 h-2 bg-gray-500 rounded-full mr-3"></div><span class="text-gray-600">Sakit: <span id="legend-sakit" class="font-medium text-gray-900">0</span></span>
-        </div>
-        <div class="flex items-center">
-         <div class="w-2 h-2 bg-gray-400 rounded-full mr-3"></div><span class="text-gray-600">Izin: <span id="legend-izin" class="font-medium text-gray-900">0</span></span>
-        </div>
-        <div class="flex items-center">
-         <div class="w-2 h-2 bg-gray-300 rounded-full mr-3"></div><span class="text-gray-600">Dinas: <span id="legend-dinas" class="font-medium text-gray-900">0</span></span>
-        </div>
-       </div>
-      </div><!-- Grafik Bar Mingguan -->
-      <div class="chart-container p-8 floating-animation">
-       <h3 class="text-xl font-bold gradient-text mb-8 text-center">📈 Tren Kehadiran 7 Hari Terakhir</h3>
-       <div class="h-48 flex items-end justify-between space-x-2">
-        <div class="flex flex-col items-center flex-1">
-         <div class="w-full bg-gray-200 rounded-t" style="height: 120px; position: relative;">
-          <div id="bar-0" class="bg-red-500 rounded-t transition-all duration-500" style="width: 100%; height: 0%; position: absolute; bottom: 0;"></div>
-         </div>
-         <div class="text-xs mt-2 text-center" id="day-0">
-          Sen
-         </div>
-         <div class="text-xs font-bold" id="count-0">
-          0
-         </div>
-        </div>
-        <div class="flex flex-col items-center flex-1">
-         <div class="w-full bg-gray-200 rounded-t" style="height: 120px; position: relative;">
-          <div id="bar-1" class="bg-red-500 rounded-t transition-all duration-500" style="width: 100%; height: 0%; position: absolute; bottom: 0;"></div>
-         </div>
-         <div class="text-xs mt-2 text-center" id="day-1">
-          Sel
-         </div>
-         <div class="text-xs font-bold" id="count-1">
-          0
-         </div>
-        </div>
-        <div class="flex flex-col items-center flex-1">
-         <div class="w-full bg-gray-200 rounded-t" style="height: 120px; position: relative;">
-          <div id="bar-2" class="bg-red-500 rounded-t transition-all duration-500" style="width: 100%; height: 0%; position: absolute; bottom: 0;"></div>
-         </div>
-         <div class="text-xs mt-2 text-center" id="day-2">
-          Rab
-         </div>
-         <div class="text-xs font-bold" id="count-2">
-          0
-         </div>
-        </div>
-        <div class="flex flex-col items-center flex-1">
-         <div class="w-full bg-gray-200 rounded-t" style="height: 120px; position: relative;">
-          <div id="bar-3" class="bg-red-500 rounded-t transition-all duration-500" style="width: 100%; height: 0%; position: absolute; bottom: 0;"></div>
-         </div>
-         <div class="text-xs mt-2 text-center" id="day-3">
-          Kam
-         </div>
-         <div class="text-xs font-bold" id="count-3">
-          0
-         </div>
-        </div>
-        <div class="flex flex-col items-center flex-1">
-         <div class="w-full bg-gray-200 rounded-t" style="height: 120px; position: relative;">
-          <div id="bar-4" class="bg-red-500 rounded-t transition-all duration-500" style="width: 100%; height: 0%; position: absolute; bottom: 0;"></div>
-         </div>
-         <div class="text-xs mt-2 text-center" id="day-4">
-          Jum
-         </div>
-         <div class="text-xs font-bold" id="count-4">
-          0
-         </div>
-        </div>
-        <div class="flex flex-col items-center flex-1">
-         <div class="w-full bg-gray-200 rounded-t" style="height: 120px; position: relative;">
-          <div id="bar-5" class="bg-red-500 rounded-t transition-all duration-500" style="width: 100%; height: 0%; position: absolute; bottom: 0;"></div>
-         </div>
-         <div class="text-xs mt-2 text-center" id="day-5">
-          Sab
-         </div>
-         <div class="text-xs font-bold" id="count-5">
-          0
-         </div>
-        </div>
-        <div class="flex flex-col items-center flex-1">
-         <div class="w-full bg-gray-200 rounded-t" style="height: 120px; position: relative;">
-          <div id="bar-6" class="bg-red-500 rounded-t transition-all duration-500" style="width: 100%; height: 0%; position: absolute; bottom: 0;"></div>
-         </div>
-         <div class="text-xs mt-2 text-center" id="day-6">
-          Min
-         </div>
-         <div class="text-xs font-bold" id="count-6">
-          0
-         </div>
-        </div>
-       </div>
-      </div>
-     </div><!-- Daftar Kehadiran Hari Ini -->
-     <div class="mt-16">
-      <h3 class="text-xl font-bold gradient-text mb-8 text-center">📋 Daftar Kehadiran Hari Ini</h3>
-      <div class="overflow-x-auto">
-       <table class="w-full table-modern">
-        <thead>
-         <tr>
-          <th class="p-6 text-left text-sm font-bold">👤 Nama Guru</th>
-          <th class="p-6 text-left text-sm font-bold">📊 Status</th>
-          <th class="p-6 text-left text-sm font-bold">⏰ Jam Hadir</th>
-          <th class="p-6 text-left text-sm font-bold">📝 Keterangan Lokasi</th>
-          <th class="p-6 text-left text-sm font-bold">🌍 GPS</th>
-         </tr>
-        </thead>
-        <tbody id="attendance-list">
-         <tr>
-          <td colspan="5" class="p-8 text-center text-gray-500 text-lg font-medium">🔍 Belum ada data kehadiran hari ini</td>
-         </tr>
-        </tbody>
-       </table>
-      </div>
-     </div>
-    </div><!-- Tab Data Guru -->
-    <div id="content-guru" class="tab-content">
-     <h2 class="text-2xl font-bold gradient-text mb-8 text-center">👥 Manajemen Data Guru</h2>
-     <form id="guru-form" class="space-y-8 mb-16">
-      <div class="grid md:grid-cols-2 gap-8">
-       <div><label for="nama-guru" class="block text-sm font-semibold text-gray-700 mb-3">👤 Nama Guru</label> <input type="text" id="nama-guru" required class="glass-input w-full p-4 focus:outline-none text-gray-700 font-medium" placeholder="Masukkan nama guru">
-       </div>
-       <div><label for="nip-guru" class="block text-sm font-semibold text-gray-700 mb-3">🆔 NIP</label> <input type="text" id="nip-guru" required class="glass-input w-full p-4 focus:outline-none text-gray-700 font-medium" placeholder="Masukkan NIP">
-       </div>
-      </div>
-      <div><label for="jabatan-guru" class="block text-sm font-semibold text-gray-700 mb-3">💼 Jabatan</label> <select id="jabatan-guru" required class="glass-input w-full p-4 focus:outline-none text-gray-700 font-medium"> <option value="">-- Pilih Jabatan --</option> <option value="Kepala Sekolah">👑 Kepala Sekolah</option> <option value="Wakil Kepala Sekolah">🎯 Wakil Kepala Sekolah</option> <option value="Guru Kelas">👩‍🏫 Guru Kelas</option> <option value="Guru Mata Pelajaran">📚 Guru Mata Pelajaran</option> <option value="Guru Olahraga">⚽ Guru Olahraga</option> <option value="Guru Agama">🕌 Guru Agama</option> <option value="Guru Bahasa Inggris">🌍 Guru Bahasa Inggris</option> <option value="Guru Seni Budaya">🎨 Guru Seni Budaya</option> <option value="Guru BK">💬 Guru BK (Bimbingan Konseling)</option> <option value="Pustakawan">📖 Pustakawan</option> <option value="Tenaga Administrasi">📋 Tenaga Administrasi</option> </select>
-      </div>
-      <div><label for="status-kepegawaian" class="block text-sm font-semibold text-gray-700 mb-3">📄 Status Kepegawaian</label> <select id="status-kepegawaian" required class="glass-input w-full p-4 focus:outline-none text-gray-700 font-medium"> <option value="">-- Pilih Status Kepegawaian --</option> <option value="PNS">👨‍💼 PNS</option> <option value="PPPK">📋 PPPK</option> <option value="GTT">📝 GTT (Guru Tidak Tetap)</option> <option value="GTY">🎓 GTY (Guru Tetap Yayasan)</option> <option value="Honorer">💼 Honorer</option> </select>
-      </div>
-      <div class="flex gap-6"><button type="submit" id="submit-guru" class="gradient-button text-white py-4 px-8 font-bold text-lg flex-1"> ➕ Tambah Guru </button> <button type="button" id="cancel-edit" class="gradient-button bg-red-500 text-white py-4 px-8 font-bold text-lg hidden"> ❌ Batal Edit </button>
-      </div>
-     </form><!-- Daftar Guru -->
-     <div>
-      <h3 class="text-xl font-bold gradient-text mb-8 text-center">📋 Daftar Guru</h3>
-      <div class="overflow-x-auto">
-       <table class="w-full table-modern">
-        <thead>
-         <tr>
-          <th class="p-6 text-left text-sm font-bold">👤 Nama</th>
-          <th class="p-6 text-left text-sm font-bold">🆔 NIP</th>
-          <th class="p-6 text-left text-sm font-bold">💼 Jabatan</th>
-          <th class="p-6 text-left text-sm font-bold">📄 Status Kepegawaian</th>
-          <th class="p-6 text-left text-sm font-bold">⚙️ Aksi</th>
-         </tr>
-        </thead>
-        <tbody id="guru-list">
-         <tr>
-          <td colspan="5" class="p-8 text-center text-gray-500 text-lg font-medium">🔍 Belum ada data guru</td>
-         </tr>
-        </tbody>
-       </table>
-      </div>
-     </div>
-    </div><!-- Tab Laporan -->
-    <div id="content-laporan" class="tab-content">
-     <h2 class="text-2xl font-bold gradient-text mb-8 text-center">📊 Laporan Rekap Kehadiran</h2>
-     <div class="mb-12 grid md:grid-cols-3 gap-6">
-      <div><label for="filter-bulan" class="block text-sm font-semibold text-gray-700 mb-3">📅 Bulan</label> <select id="filter-bulan" class="glass-input w-full p-4 focus:outline-none text-gray-700 font-medium"> <option value="">Semua Bulan</option> <option value="01">Januari</option> <option value="02">Februari</option> <option value="03">Maret</option> <option value="04">April</option> <option value="05">Mei</option> <option value="06">Juni</option> <option value="07">Juli</option> <option value="08">Agustus</option> <option value="09">September</option> <option value="10">Oktober</option> <option value="11">November</option> <option value="12">Desember</option> </select>
-      </div>
-      <div><label for="filter-tahun" class="block text-sm font-semibold text-gray-700 mb-3">📆 Tahun</label> <select id="filter-tahun" class="glass-input w-full p-4 focus:outline-none text-gray-700 font-medium"> </select>
-      </div>
-      <div class="flex items-end"><button onclick="generateReport()" class="gradient-button w-full text-white py-4 px-8 font-bold text-lg"> 📈 Generate Laporan </button>
-      </div>
-     </div><!-- Download Options -->
-     <div id="download-section" class="mb-12 hidden">
-      <div class="chart-container p-6">
-       <h3 class="text-lg font-bold gradient-text mb-6 text-center">💾 Download Laporan</h3>
-       <div class="flex flex-wrap gap-4 justify-center"><button onclick="downloadExcel()" class="gradient-button text-white px-6 py-3 text-sm font-bold"> 📊 Excel </button> <button onclick="downloadCSV()" class="gradient-button text-white px-6 py-3 text-sm font-bold"> 📄 CSV </button> <button onclick="downloadPDF()" class="gradient-button text-white px-6 py-3 text-sm font-bold"> 📋 PDF </button>
-       </div>
-      </div>
-     </div><!-- Statistik -->
-     <div id="statistics" class="grid md:grid-cols-5 gap-6 mb-8 hidden">
-      <div class="stats-card bg-green-100 p-6 text-center">
-       <h4 class="font-bold text-green-800 mb-2">✅ Total Hadir</h4>
-       <p id="stat-hadir" class="text-3xl font-bold text-green-600">0</p>
-      </div>
-      <div class="stats-card bg-red-100 p-6 text-center">
-       <h4 class="font-bold text-red-800 mb-2">🤒 Total Sakit</h4>
-       <p id="stat-sakit" class="text-3xl font-bold text-red-600">0</p>
-      </div>
-      <div class="stats-card bg-yellow-100 p-6 text-center">
-       <h4 class="font-bold text-yellow-800 mb-2">📝 Total Izin</h4>
-       <p id="stat-izin" class="text-3xl font-bold text-yellow-600">0</p>
-      </div>
-      <div class="stats-card bg-blue-100 p-6 text-center">
-       <h4 class="font-bold text-blue-800 mb-2">🚗 Total Dinas Luar</h4>
-       <p id="stat-dinas" class="text-3xl font-bold text-blue-600">0</p>
-      </div>
-      <div class="stats-card bg-gray-100 p-6 text-center">
-       <h4 class="font-bold text-gray-800 mb-2">❌ Tanpa Keterangan</h4>
-       <p id="stat-tanpa-keterangan" class="text-3xl font-bold text-gray-600">0</p>
-      </div>
-     </div><!-- Tabel Laporan Detail -->
-     <div class="overflow-x-auto">
-      <table class="w-full table-modern">
-       <thead id="report-header">
-        <tr>
-         <th class="p-6 text-left sticky left-0 z-10 font-bold">👤 Nama Guru</th>
-        </tr>
-       </thead>
-       <tbody id="report-table">
-        <tr>
-         <td class="p-8 text-center text-gray-500 text-lg font-medium">🔍 Klik "Generate Laporan" untuk melihat data</td>
-        </tr>
-       </tbody>
-      </table>
-     </div><!-- Resume Laporan -->
-     <div id="resume-section" class="mt-12 hidden">
-      <h3 class="text-2xl font-bold gradient-text mb-8 text-center">📈 Resume Kehadiran</h3>
-      <div class="chart-container p-8">
-       <div class="grid md:grid-cols-2 gap-6">
-        <div>
-         <h4 class="font-semibold text-gray-700 mb-3">Statistik Keseluruhan</h4>
-         <div class="space-y-2 text-sm">
-          <div class="flex justify-between"><span>Total Hari Kerja:</span> <span id="resume-total-days" class="font-bold">0 hari</span>
-          </div>
-          <div class="flex justify-between"><span>Total Kehadiran:</span> <span id="resume-total-attendance" class="font-bold">0 record</span>
-          </div>
-          <div class="flex justify-between"><span>Rata-rata Kehadiran per Hari:</span> <span id="resume-avg-daily" class="font-bold">0 guru</span>
-          </div>
-         </div>
-        </div>
-        <div>
-         <h4 class="font-semibold text-gray-700 mb-3">Persentase Status</h4>
-         <div class="space-y-2 text-sm">
-          <div class="flex justify-between"><span class="flex items-center"><span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>Hadir:</span> <span id="resume-percent-hadir" class="font-bold">0%</span>
-          </div>
-          <div class="flex justify-between"><span class="flex items-center"><span class="w-3 h-3 bg-red-500 rounded-full mr-2"></span>Sakit:</span> <span id="resume-percent-sakit" class="font-bold">0%</span>
-          </div>
-          <div class="flex justify-between"><span class="flex items-center"><span class="w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>Izin:</span> <span id="resume-percent-izin" class="font-bold">0%</span>
-          </div>
-          <div class="flex justify-between"><span class="flex items-center"><span class="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>Dinas Luar:</span> <span id="resume-percent-dinas" class="font-bold">0%</span>
-          </div>
-          <div class="flex justify-between"><span class="flex items-center"><span class="w-3 h-3 bg-gray-500 rounded-full mr-2"></span>Tanpa Keterangan:</span> <span id="resume-percent-tanpa-keterangan" class="font-bold">0%</span>
-          </div>
-         </div>
-        </div>
-       </div><!-- Guru dengan Kehadiran Terbaik dan Terburuk -->
-       <div class="mt-6 grid md:grid-cols-2 gap-6">
-        <div class="bg-green-50 p-4 rounded-lg">
-         <h5 class="font-semibold text-green-800 mb-2">🏆 Kehadiran Terbaik</h5>
-         <div id="best-attendance" class="text-sm text-green-700">
-          Belum ada data
-         </div>
-        </div>
-        <div class="bg-red-50 p-4 rounded-lg">
-         <h5 class="font-semibold text-red-800 mb-2">⚠️ Perlu Perhatian</h5>
-         <div id="attention-needed" class="text-sm text-red-700">
-          Belum ada data
-         </div>
-        </div>
-       </div>
-      </div>
-     </div>
-    </div>
-   </div>
-  </div>
-  <script>
-        // Configuration
-        const defaultConfig = {
-            app_title: "Aplikasi Kehadiran Guru SDN Muhara",
-            school_name: "SDN Muhara"
-        };
-<script>
-/* === KONFIGURASI === */
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKj5ohfsNaLRJ83pzSyz8CykGzl_Sw7FEMW4TkDmJErsh-X72hZCC9V8YA0S7YmWmk/exec"; // Ganti dengan URL Apps Script kamu
+    body { background-color: #f9fafb; }
+    .active-tab { background-color: #2563eb; color: white; }
+    .tab-btn { cursor: pointer; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body class="font-sans text-gray-800">
 
+  <header class="bg-blue-600 text-white p-5 text-center shadow">
+    <h1 class="text-2xl font-bold">Aplikasi Kehadiran Guru SDN Muhara</h1>
+    <p id="current-date" class="text-sm"></p>
+    <div id="clock" class="text-xl font-mono mt-1"></div>
+  </header>
+
+  <nav class="flex justify-center bg-blue-100 shadow">
+    <div id="tab-kehadiran" class="tab-btn active-tab px-6 py-3" onclick="switchTab('kehadiran')">Kehadiran</div>
+    <div id="tab-guru" class="tab-btn px-6 py-3" onclick="switchTab('guru')">Data Guru</div>
+    <div id="tab-laporan" class="tab-btn px-6 py-3" onclick="switchTab('laporan')">Laporan</div>
+  </nav>
+
+  <!-- === TAB KEHADIRAN === -->
+  <section id="content-kehadiran" class="p-6">
+    <h2 class="text-xl font-semibold mb-4">Form Kehadiran Guru</h2>
+    <form id="attendance-form" class="space-y-3">
+      <select id="nama-guru-kehadiran" class="w-full border p-2 rounded" required>
+        <option value="">-- Pilih Guru --</option>
+      </select>
+      <select id="status-kehadiran" class="w-full border p-2 rounded" required>
+        <option value="Hadir">Hadir</option>
+        <option value="Izin">Izin</option>
+        <option value="Sakit">Sakit</option>
+      </select>
+      <input id="keterangan-lokasi" type="text" class="w-full border p-2 rounded" placeholder="Keterangan lokasi (opsional)">
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Simpan Kehadiran</button>
+    </form>
+
+    <h3 class="text-lg font-semibold mt-8 mb-2">Daftar Kehadiran Hari Ini</h3>
+    <table class="w-full border-collapse border text-sm">
+      <thead class="bg-gray-200">
+        <tr>
+          <th class="border p-2">Nama Guru</th>
+          <th class="border p-2">Status</th>
+          <th class="border p-2">Jam Hadir</th>
+          <th class="border p-2">Lokasi</th>
+          <th class="border p-2">Tanggal</th>
+        </tr>
+      </thead>
+      <tbody id="attendance-list"></tbody>
+    </table>
+  </section>
+
+  <!-- === TAB DATA GURU === -->
+  <section id="content-guru" class="hidden p-6">
+    <h2 class="text-xl font-semibold mb-4">Manajemen Data Guru</h2>
+    <form id="guru-form" class="grid md:grid-cols-2 gap-3">
+      <input id="nama-guru" type="text" class="border p-2 rounded" placeholder="Nama Guru" required>
+      <input id="nip-guru" type="text" class="border p-2 rounded" placeholder="NIP">
+      <input id="jabatan-guru" type="text" class="border p-2 rounded" placeholder="Jabatan">
+      <select id="status-kepegawaian" class="border p-2 rounded">
+        <option value="PNS">PNS</option>
+        <option value="Non PNS">Non PNS</option>
+      </select>
+      <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 md:col-span-2">Tambah / Update Guru</button>
+    </form>
+
+    <h3 class="text-lg font-semibold mt-8 mb-2">Daftar Guru</h3>
+    <table class="w-full border-collapse border text-sm">
+      <thead class="bg-gray-200">
+        <tr>
+          <th class="border p-2">Nama Guru</th>
+          <th class="border p-2">NIP</th>
+          <th class="border p-2">Jabatan</th>
+          <th class="border p-2">Status</th>
+          <th class="border p-2">Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="guru-list"></tbody>
+    </table>
+  </section>
+
+  <!-- === TAB LAPORAN === -->
+  <section id="content-laporan" class="hidden p-6">
+    <h2 class="text-xl font-semibold mb-4">Laporan Kehadiran</h2>
+    <p class="text-sm mb-3 text-gray-500">Menampilkan seluruh data kehadiran dari Google Sheet.</p>
+    <table class="w-full border-collapse border text-sm">
+      <thead class="bg-gray-200">
+        <tr>
+          <th class="border p-2">Nama Guru</th>
+          <th class="border p-2">Status</th>
+          <th class="border p-2">Jam Hadir</th>
+          <th class="border p-2">Tanggal</th>
+          <th class="border p-2">Lokasi</th>
+        </tr>
+      </thead>
+      <tbody id="laporan-list"></tbody>
+    </table>
+  </section>
+
+<script>
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKj5ohfsNaLRJ83pzSyz8CykGzl_Sw7FEMW4TkDmJErsh-X72hZCC9V8YA0S7YmWmk/exec";
 let teachers = [];
 let attendanceRecords = [];
 
-/* === JAM DIGITAL === */
+/* === FUNGSI UMUM === */
 function updateClock() {
   const now = new Date();
-  let hours = now.getHours();
-  const minutes = now.getMinutes();
-  const seconds = now.getSeconds();
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12 || 12;
-  document.getElementById('hours').textContent = String(hours).padStart(2, '0');
-  document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
-  document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
-  document.getElementById('ampm').textContent = ampm;
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-/* === TAB NAVIGASI === */
-function switchTab(tabName) {
-  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('[id^="tab-"]').forEach(tab => {
-    tab.classList.remove('active');
-    tab.className = 'modern-tab flex-1 py-5 px-8 text-center font-semibold text-gray-600';
-  });
-  document.getElementById(`content-${tabName}`).classList.add('active');
-  const activeTab = document.getElementById(`tab-${tabName}`);
-  activeTab.classList.add('active');
-  activeTab.className = 'modern-tab active flex-1 py-5 px-8 text-center font-semibold text-white';
+function switchTab(tab) {
+  document.querySelectorAll('section[id^="content-"]').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active-tab'));
+  document.getElementById(`content-${tab}`).classList.remove('hidden');
+  document.getElementById(`tab-${tab}`).classList.add('active-tab');
 }
 
-/* === LOAD DATA DARI GOOGLE SHEET === */
-async function loadTeachersFromSheet() {
-  try {
-    const res = await fetch(GOOGLE_SCRIPT_URL + "?sheet=guru");
-    const data = await res.json();
-    teachers = data.slice(1).map(row => ({
-      nama_guru: row[0],
-      nip: row[1],
-      jabatan: row[2],
-      status_kepegawaian: row[3]
-    }));
-    updateTeacherList();
-    updateTeacherDropdown();
-  } catch (err) {
-    console.error("Gagal memuat data guru:", err);
-  }
+/* === LOAD DATA === */
+async function loadTeachers() {
+  const res = await fetch(GOOGLE_SCRIPT_URL + '?sheet=guru');
+  const data = await res.json();
+  teachers = data.slice(1).map(r => ({ nama_guru: r[0], nip: r[1], jabatan: r[2], status: r[3] }));
+  updateTeacherTable();
+  updateTeacherDropdown();
 }
 
-async function loadAttendanceFromSheet() {
-  try {
-    const res = await fetch(GOOGLE_SCRIPT_URL + "?sheet=kehadiran");
-    const data = await res.json();
-    attendanceRecords = data.slice(1).map(row => ({
-      nama_guru: row[0],
-      status: row[1],
-      jam_hadir: row[2],
-      tanggal: row[3],
-      keterangan_lokasi: row[4]
-    }));
-    updateAttendanceList();
-  } catch (err) {
-    console.error("Gagal memuat data kehadiran:", err);
-  }
+async function loadAttendance() {
+  const res = await fetch(GOOGLE_SCRIPT_URL + '?sheet=kehadiran');
+  const data = await res.json();
+  attendanceRecords = data.slice(1).map(r => ({ nama: r[0], status: r[1], jam: r[2], tgl: r[3], lokasi: r[4] }));
+  updateAttendanceToday();
+  updateLaporan();
 }
 
-/* === SIMPAN DATA KE GOOGLE SHEET === */
-async function saveTeacherToSheet(teacherData) {
+/* === SIMPAN DATA === */
+async function saveTeacher(d) {
   await fetch(GOOGLE_SCRIPT_URL, {
-    method: "POST",
-    body: JSON.stringify({ type: "teacher", data: teacherData })
+    method: 'POST',
+    body: JSON.stringify({ type: 'teacher', data: d })
   });
 }
 
-async function saveAttendanceToSheet(attendanceData) {
+async function saveAttendance(d) {
   await fetch(GOOGLE_SCRIPT_URL, {
-    method: "POST",
-    body: JSON.stringify({ type: "attendance", data: attendanceData })
+    method: 'POST',
+    body: JSON.stringify({ type: 'attendance', data: d })
   });
 }
 
 /* === UPDATE UI === */
-function updateTeacherList() {
+function updateTeacherTable() {
   const tbody = document.getElementById('guru-list');
-  if (!teachers.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-gray-500">Belum ada data guru</td></tr>';
-    return;
-  }
-  tbody.innerHTML = teachers.map(t => `
+  if (teachers.length === 0) return tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4">Belum ada data</td></tr>';
+  tbody.innerHTML = teachers.map((t, i) => `
     <tr>
-      <td class="p-6">${t.nama_guru}</td>
-      <td class="p-6">${t.nip}</td>
-      <td class="p-6">${t.jabatan}</td>
-      <td class="p-6">${t.status_kepegawaian}</td>
-      <td class="p-6">-</td>
-    </tr>
-  `).join('');
+      <td class="border p-2">${t.nama_guru}</td>
+      <td class="border p-2">${t.nip}</td>
+      <td class="border p-2">${t.jabatan}</td>
+      <td class="border p-2">${t.status}</td>
+      <td class="border p-2">
+        <button class="text-blue-600" onclick="editGuru(${i})">Edit</button>
+      </td>
+    </tr>`).join('');
 }
 
 function updateTeacherDropdown() {
-  const select = document.getElementById('nama-guru-kehadiran');
-  select.innerHTML = '<option value="">-- Pilih Guru --</option>';
-  teachers.forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t.nama_guru;
-    opt.textContent = t.nama_guru;
-    select.appendChild(opt);
-  });
+  const sel = document.getElementById('nama-guru-kehadiran');
+  sel.innerHTML = '<option value="">-- Pilih Guru --</option>' +
+    teachers.map(t => `<option>${t.nama_guru}</option>`).join('');
 }
 
-function updateAttendanceList() {
+function updateAttendanceToday() {
   const tbody = document.getElementById('attendance-list');
   const today = new Date().toISOString().split('T')[0];
-  const todayList = attendanceRecords.filter(r => r.tanggal === today);
-  if (!todayList.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-gray-500">Belum ada kehadiran hari ini</td></tr>';
-    return;
-  }
-  tbody.innerHTML = todayList.map(r => `
+  const list = attendanceRecords.filter(r => r.tgl === today);
+  if (!list.length) return tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4">Belum ada data hari ini</td></tr>';
+  tbody.innerHTML = list.map(r => `
     <tr>
-      <td class="p-6">${r.nama_guru}</td>
-      <td class="p-6">${r.status}</td>
-      <td class="p-6">${r.jam_hadir}</td>
-      <td class="p-6">${r.keterangan_lokasi}</td>
-      <td class="p-6">${r.tanggal}</td>
-    </tr>
-  `).join('');
+      <td class="border p-2">${r.nama}</td>
+      <td class="border p-2">${r.status}</td>
+      <td class="border p-2">${r.jam}</td>
+      <td class="border p-2">${r.lokasi}</td>
+      <td class="border p-2">${r.tgl}</td>
+    </tr>`).join('');
+}
+
+function updateLaporan() {
+  const tbody = document.getElementById('laporan-list');
+  if (!attendanceRecords.length) return tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4">Belum ada data</td></tr>';
+  tbody.innerHTML = attendanceRecords.map(r => `
+    <tr>
+      <td class="border p-2">${r.nama}</td>
+      <td class="border p-2">${r.status}</td>
+      <td class="border p-2">${r.jam}</td>
+      <td class="border p-2">${r.tgl}</td>
+      <td class="border p-2">${r.lokasi}</td>
+    </tr>`).join('');
+}
+
+/* === EDIT DATA GURU === */
+function editGuru(i) {
+  const g = teachers[i];
+  document.getElementById('nama-guru').value = g.nama_guru;
+  document.getElementById('nip-guru').value = g.nip;
+  document.getElementById('jabatan-guru').value = g.jabatan;
+  document.getElementById('status-kepegawaian').value = g.status;
+  switchTab('guru');
 }
 
 /* === EVENT FORM === */
-document.addEventListener("DOMContentLoaded", () => {
-  // Form Guru
-  document.getElementById('guru-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    const data = {
-      nama_guru: document.getElementById('nama-guru').value,
-      nip: document.getElementById('nip-guru').value,
-      jabatan: document.getElementById('jabatan-guru').value,
-      status_kepegawaian: document.getElementById('status-kepegawaian').value,
-      waktu_input: new Date().toLocaleString('id-ID')
-    };
-    await saveTeacherToSheet(data);
-    alert('✅ Data Guru berhasil disimpan ke Google Sheet');
-    document.getElementById('guru-form').reset();
-    await loadTeachersFromSheet();
-  });
+document.getElementById('guru-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const data = {
+    nama_guru: document.getElementById('nama-guru').value,
+    nip: document.getElementById('nip-guru').value,
+    jabatan: document.getElementById('jabatan-guru').value,
+    status_kepegawaian: document.getElementById('status-kepegawaian').value,
+    waktu_input: new Date().toLocaleString('id-ID')
+  };
+  await saveTeacher(data);
+  alert('✅ Data guru disimpan');
+  e.target.reset();
+  loadTeachers();
+});
 
-  // Form Kehadiran
-  document.getElementById('attendance-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    const now = new Date();
-    const data = {
-      nama_guru: document.getElementById('nama-guru-kehadiran').value,
-      status: document.getElementById('status-kehadiran').value,
-      jam_hadir: now.toLocaleTimeString('id-ID'),
-      tanggal: now.toISOString().split('T')[0],
-      keterangan_lokasi: document.getElementById('keterangan-lokasi').value
-    };
-    await saveAttendanceToSheet(data);
-    alert('✅ Kehadiran berhasil disimpan ke Google Sheet');
-    document.getElementById('attendance-form').reset();
-    await loadAttendanceFromSheet();
-  });
-
-  // Jalankan semua fungsi awal
-  initializeApp();
+document.getElementById('attendance-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const now = new Date();
+  const data = {
+    nama_guru: document.getElementById('nama-guru-kehadiran').value,
+    status: document.getElementById('status-kehadiran').value,
+    jam_hadir: now.toLocaleTimeString('id-ID'),
+    tanggal: now.toISOString().split('T')[0],
+    keterangan_lokasi: document.getElementById('keterangan-lokasi').value
+  };
+  await saveAttendance(data);
+  alert('✅ Kehadiran disimpan');
+  e.target.reset();
+  loadAttendance();
 });
 
 /* === INISIALISASI === */
-async function initializeApp() {
-  // Tampilkan tanggal
-  document.getElementById('current-date').textContent = new Date().toLocaleDateString('id-ID', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-  });
-  // Jalankan jam
+window.onload = async () => {
+  document.getElementById('current-date').textContent = new Date().toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
   updateClock();
   setInterval(updateClock, 1000);
-  // Load data
-  await loadTeachersFromSheet();
-  await loadAttendanceFromSheet();
-}
+  await loadTeachers();
+  await loadAttendance();
+};
 </script>
 
-
 </body>
-
 </html>
-
-
-
