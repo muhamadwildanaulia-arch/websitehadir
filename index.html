@@ -320,23 +320,9 @@ function getLocation() {
 }
 
 /* === EVENT FORM === */
-document.getElementById('guru-form').addEventListener('submit', async e => {
-  e.preventDefault();
-  const data = {
-    nama_guru: document.getElementById('nama-guru').value,
-    nip: document.getElementById('nip-guru').value,
-    jabatan: document.getElementById('jabatan-guru').value,
-    status_kepegawaian: document.getElementById('status-kepegawaian').value,
-    waktu_input: new Date().toLocaleString('id-ID')
-  };
-  await saveTeacher(data);
-  alert('✅ Data guru berhasil disimpan');
-  e.target.reset();
-  loadTeachers();
-});
-
 document.getElementById('attendance-form').addEventListener('submit', async e => {
   e.preventDefault();
+
   const now = new Date();
   const data = {
     nama_guru: document.getElementById('nama-guru-kehadiran').value,
@@ -345,10 +331,40 @@ document.getElementById('attendance-form').addEventListener('submit', async e =>
     tanggal: now.toISOString().split('T')[0],
     keterangan_lokasi: document.getElementById('keterangan-lokasi').value
   };
+
+  // Tambahkan pesan loading sementara
+  const loadingMsg = document.createElement('div');
+  loadingMsg.id = "loading-msg";
+  loadingMsg.className = "fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50";
+  loadingMsg.innerHTML = `
+    <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+      <p class="text-blue-700 font-semibold text-lg">⏳ Menyimpan dan memperbarui data kehadiran...</p>
+    </div>`;
+  document.body.appendChild(loadingMsg);
+
+  // Simpan kehadiran
   await saveAttendance(data);
-  alert('✅ Kehadiran disimpan');
+
+  // Beri waktu agar Google Sheet sempat memproses data baru
+  setTimeout(async () => {
+    await loadAttendance();   // ambil data baru dari sheet
+    updateAttendanceToday();  // perbarui tabel hari ini
+    updateChart();            // perbarui grafik hari ini
+
+    // Hapus pesan loading, ganti dengan notifikasi sukses
+    loadingMsg.innerHTML = `
+      <div class="bg-white p-6 rounded-lg shadow-lg text-center animate-bounce">
+        <p class="text-green-700 font-semibold text-lg">✅ Data kehadiran berhasil diperbarui!</p>
+      </div>`;
+    
+    // Hilangkan notifikasi setelah 1,5 detik
+    setTimeout(() => {
+      loadingMsg.remove();
+    }, 1500);
+  }, 1500); // jeda 1,5 detik
+
+  // Reset form
   e.target.reset();
-  loadAttendance();
 });
 
 /* === INISIALISASI === */
@@ -363,3 +379,4 @@ window.onload = async () => {
 
 </body>
 </html>
+
