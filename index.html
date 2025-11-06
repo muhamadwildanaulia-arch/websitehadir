@@ -170,23 +170,19 @@ async function loadTeachers() {
 
 async function loadAttendance() {
   try {
-    const res = await fetch(GOOGLE_SCRIPT_URL + "?sheet=kehadiran");
+    const res = await fetch(GOOGLE_SCRIPT_URL + "?sheet=kehadiran"); // ⚠️ penting banget
     const data = await res.json();
-
     attendanceRecords = data.slice(1).map(r => ({
       nama_guru: r[0],
       status: r[1],
       jam: r[2],
-      tanggal: parseTanggal(r[3]),
-      lokasi: r[4]
+      tanggal: r[3],
+      lokasi: r[4],
     }));
-
-    console.log("📊 Data kehadiran terbaca:", attendanceRecords); // DEBUG
-
     updateAttendanceToday();
     updateChart();
   } catch (e) {
-    console.error("❌ Gagal memuat data kehadiran:", e);
+    console.error("Gagal memuat data kehadiran:", e);
   }
 }
 
@@ -418,6 +414,7 @@ window.onload = async () => {
 
 </body>
 </html>
+
 
 
 
