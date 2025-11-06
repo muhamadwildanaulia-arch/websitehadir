@@ -172,13 +172,25 @@ async function loadAttendance() {
   try {
     const res = await fetch(GOOGLE_SCRIPT_URL + "?sheet=kehadiran");
     const data = await res.json();
+
+    // Pastikan kolom terbaca benar
     attendanceRecords = data.slice(1).map(r => ({
-      nama_guru: r[0], status: r[1], jam: r[2], tanggal: r[3], lokasi: r[4]
+      nama_guru: r[0],
+      status: r[1],
+      jam: r[2],
+      tanggal: typeof r[3] === "object"
+        ? new Date(r[3]).toISOString().split("T")[0]
+        : String(r[3]).trim(),
+      lokasi: r[4]
     }));
+
     updateAttendanceToday();
     updateChart();
-  } catch (e) { console.error(e); }
+  } catch (e) {
+    console.error("Gagal memuat data kehadiran:", e);
+  }
 }
+
 
 /* === SIMPAN DATA === */
 async function saveTeacher(d) {
@@ -223,11 +235,15 @@ function updateTeacherDropdown() {
 function updateAttendanceToday() {
   const tbody = document.getElementById('attendance-list');
   const today = new Date().toISOString().split('T')[0];
-  const todayData = attendanceRecords.filter(r => r.tanggal === today);
+
+  // Bandingkan setelah diformat string
+  const todayData = attendanceRecords.filter(r => String(r.tanggal).includes(today));
+
   if (!todayData.length) {
     tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4">Belum ada kehadiran hari ini</td></tr>`;
     return;
   }
+
   tbody.innerHTML = todayData.map(r => `
     <tr>
       <td class="border p-2">${r.nama_guru}</td>
@@ -379,6 +395,7 @@ window.onload = async () => {
 
 </body>
 </html>
+
 
 
 
