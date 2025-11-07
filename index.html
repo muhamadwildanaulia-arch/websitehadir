@@ -410,15 +410,26 @@ document.getElementById('attendance-form').addEventListener('submit', async e =>
 window.onload = async () => {
   document.getElementById('current-date').textContent =
     new Date().toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-  updateClock(); setInterval(updateClock, 1000);
+
+  updateClock();
+  setInterval(updateClock, 1000);
   getLocation();
-  await loadTeachers(); await loadAttendance();
+
+  await loadTeachers();
+  await loadAttendance();
+
+  // 🔁 Tambahan baru: auto-refresh data setiap 30 detik
+  setInterval(async () => {
+    console.log("🔄 Memuat ulang data kehadiran...");
+    await loadAttendance();
+  }, 30000); // 30 detik
 };
 
 </script>
 
 </body>
 </html>
+
 
 
 
