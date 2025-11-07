@@ -3,77 +3,145 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard Admin | SDN Muhara</title>
+  <title>Dashboard Admin – SDN Muhara</title>
+
+  <!-- Tailwind CSS -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
-    body { background-color: #f4f6f9; }
+    :root{
+      --bg:#f4f6f9; --text:#1f2937;
+      --card:#ffffff; --card-soft:#f9fafb;
+      --primary-900:#1e3a8a; --primary-800:#1e40af;
+      --ring:rgba(59,130,246,.5); --zebra:rgba(0,0,0,.02);
+    }
+    .dark{
+      --bg:#0f172a; --text:#e2e8f0;
+      --card:#0b1220; --card-soft:#111827;
+      --primary-900:#0b3a91; --primary-800:#0e3ea8;
+      --ring:rgba(96,165,250,.5); --zebra:rgba(255,255,255,.05);
+    }
+    body{ background:var(--bg); color:var(--text); }
+    header.header-gradient{ background:linear-gradient(90deg,var(--primary-900),var(--primary-800)); }
+    .elev-card{ background:var(--card); border-radius:.75rem; box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -2px rgba(0,0,0,.05); }
+    .focus-ring:focus{ outline:none; box-shadow:0 0 0 3px var(--ring); }
+    thead th{ position:sticky; top:0; z-index:1; background:var(--card-soft); }
+    tbody tr:nth-child(odd){ background:var(--zebra); }
+
+    /* Avatar Inisial (dipakai app.js) */
+    .avatar{ width:2rem; height:2rem; border-radius:9999px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:.875rem; color:#fff; flex-shrink:0; }
+    .name-cell{ display:inline-flex; align-items:center; gap:.5rem; }
   </style>
 </head>
-<body class="font-sans text-gray-800">
-  <header class="bg-blue-900 text-white p-5 shadow flex items-center justify-between">
-    <div class="flex items-center space-x-4">
-      <img src="SD_Negeri_Muhara.png" alt="Logo" class="h-16 rounded bg-white p-1">
-      <h1 class="text-2xl font-bold">Dashboard Admin - SDN Muhara</h1>
+<body class="font-sans">
+
+  <!-- HEADER -->
+  <header class="header-gradient text-white p-4 shadow flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0">
+    <div class="flex items-center space-x-3">
+      <img src="SD_Negeri_Muhara.png" alt="Logo SDN Muhara" class="h-14 w-auto rounded bg-white p-1">
+      <div>
+        <h1 class="text-xl md:text-2xl font-bold leading-tight">Dashboard Admin – SDN Muhara</h1>
+        <p id="current-date" class="text-sm opacity-90"></p>
+      </div>
     </div>
-    <div>
-      <button id="logoutBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">Logout</button>
+
+    <div class="flex items-center gap-2">
+      <a href="index.html" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md focus-ring">
+        ⬅️ Beranda
+      </a>
+      <button id="toggle-theme" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md focus-ring">
+        <span id="theme-icon" class="mr-1">🌙</span><span>Mode</span>
+      </button>
     </div>
   </header>
 
-  <main class="p-6 space-y-6">
-    <section class="grid md:grid-cols-3 gap-4">
-      <div class="bg-white shadow rounded-xl p-4 text-center">
-        <h2 class="text-gray-500 text-sm">Total Guru</h2>
-        <p id="totalGuru" class="text-3xl font-bold text-blue-700">0</p>
+  <!-- KONTEN -->
+  <main class="p-6 space-y-6 max-w-6xl mx-auto">
+
+    <!-- KARTU STAT -->
+    <section class="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div class="elev-card p-4">
+        <p class="text-xs uppercase opacity-70">Total Guru</p>
+        <p id="totalGuru" class="text-3xl font-bold mt-1">0</p>
       </div>
-      <div class="bg-white shadow rounded-xl p-4 text-center">
-        <h2 class="text-gray-500 text-sm">Kehadiran Hari Ini</h2>
-        <p id="hadirHariIni" class="text-3xl font-bold text-green-600">0</p>
+      <div class="elev-card p-4">
+        <p class="text-xs uppercase opacity-70">Hadir Hari Ini</p>
+        <p id="hadirHariIni" class="text-3xl font-bold mt-1">0</p>
       </div>
-      <div class="bg-white shadow rounded-xl p-4 text-center">
-        <h2 class="text-gray-500 text-sm">Izin / Sakit / Dinas</h2>
-        <p id="tidakHadirHariIni" class="text-3xl font-bold text-yellow-600">0</p>
+      <div class="elev-card p-4">
+        <p class="text-xs uppercase opacity-70">Tidak Hadir</p>
+        <p id="tidakHadirHariIni" class="text-3xl font-bold mt-1">0</p>
       </div>
     </section>
 
-    <section class="bg-white p-6 rounded-xl shadow">
-      <h2 class="text-lg font-semibold text-blue-800 mb-3">Grafik Kehadiran Hari Ini</h2>
-      <canvas id="chartKehadiran" height="120"></canvas>
+    <!-- GRAFIK DOUGHNUT -->
+    <section class="elev-card p-5">
+      <h2 class="text-lg font-semibold mb-3" style="color:var(--primary-900)">Komposisi Kehadiran Hari Ini</h2>
+      <div class="relative" style="height:260px;">
+        <canvas id="chartKehadiran" height="160" style="max-height:260px" aria-label="Grafik komposisi kehadiran"></canvas>
+      </div>
+      <p class="text-xs opacity-70 mt-2">Grafik diperbarui otomatis saat data kehadiran masuk.</p>
     </section>
 
-    <section class="bg-white p-6 rounded-xl shadow">
-      <h2 class="text-lg font-semibold text-blue-800 mb-3">Daftar Guru</h2>
-      <table class="w-full border-collapse border text-sm">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="border p-2">Nama</th>
-            <th class="border p-2">NIP</th>
-            <th class="border p-2">Jabatan</th>
-            <th class="border p-2">Status</th>
-          </tr>
-        </thead>
-        <tbody id="tabelGuru"></tbody>
-      </table>
+    <!-- TABEL GURU -->
+    <section class="elev-card p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold" style="color:var(--primary-900)">Daftar Guru</h2>
+        <div class="text-sm opacity-70">Avatar inisial dibuat otomatis</div>
+      </div>
+      <div class="overflow-auto">
+        <table class="w-full border-collapse border text-sm">
+          <thead>
+            <tr>
+              <th class="border p-2">Nama Guru</th>
+              <th class="border p-2">NIP</th>
+              <th class="border p-2">Jabatan</th>
+              <th class="border p-2">Status</th>
+            </tr>
+          </thead>
+          <tbody id="tabelGuru"></tbody>
+        </table>
+      </div>
     </section>
   </main>
 
+  <!-- App logic -->
   <script src="app.js"></script>
-  <script>
-    // cek admin
-    if (!sessionStorage.getItem('isAdmin')) {
-      alert('Harap login sebagai admin!');
-      window.location.href = 'admin.html';
-    }
 
-    // fungsi logout (dashboard)
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-      sessionStorage.removeItem('isAdmin');
-      window.location.href = 'admin.html';
+  <!-- Inisialisasi tema & halaman -->
+  <script>
+    // Tanggal
+    (function(){
+      const now = new Date();
+      const hari = now.toLocaleDateString('id-ID', { weekday:'long' });
+      const tanggal = now.toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' });
+      document.getElementById('current-date').textContent = `${hari}, ${tanggal}`;
+    })();
+
+    // Dark mode
+    (function initTheme(){
+      try{
+        const saved = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = saved || (prefersDark ? 'dark' : 'light');
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+        const icon = document.getElementById('theme-icon'); if(icon) icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+      }catch(e){}
+    })();
+    document.getElementById('toggle-theme')?.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.toggle('dark');
+      try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch(e){}
+      const icon = document.getElementById('theme-icon'); if(icon) icon.textContent = isDark ? '☀️' : '🌙';
     });
 
-    // ketika dashboard dimuat, app.js akan menyediakan fungsi loadDashboard()
+    // Muat data dashboard
     window.addEventListener('load', () => {
+      if (typeof loadDashboard === 'function') loadDashboard();
+    });
+    // Perbarui grafik saat data attendance di-refresh
+    document.addEventListener('attendance-updated', () => {
       if (typeof loadDashboard === 'function') loadDashboard();
     });
   </script>
