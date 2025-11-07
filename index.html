@@ -124,6 +124,11 @@
     <div class="bg-white p-5 rounded-lg shadow">
       <label class="font-semibold">Pilih Bulan:</label>
       <input type="month" id="bulan-laporan" class="border p-2 rounded ml-2" onchange="generateMonthlyReport()">
+      <div class="flex justify-end mt-3">
+        <button onclick="downloadMonthlyReport()" 
+          class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+          📥 Download Laporan (Excel)
+        </button>
     </div>
 
     <div class="bg-white mt-5 p-5 rounded-lg shadow overflow-auto">
@@ -611,6 +616,7 @@ window.onload = async () => {
 
 </body>
 </html>
+
 
 
 
