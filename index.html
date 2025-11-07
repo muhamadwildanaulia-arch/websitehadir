@@ -170,15 +170,18 @@ async function loadTeachers() {
 
 async function loadAttendance() {
   try {
-    const res = await fetch(GOOGLE_SCRIPT_URL + "?sheet=kehadiran"); // ⚠️ penting banget
+    const res = await fetch(GOOGLE_SCRIPT_URL + "?sheet=kehadiran");
     const data = await res.json();
+
     attendanceRecords = data.slice(1).map(r => ({
       nama_guru: r[0],
       status: r[1],
       jam: r[2],
-      tanggal: r[3],
+      tanggal: normalizeDate(r[3]), // tanggal diformat dulu di sini
       lokasi: r[4],
     }));
+
+    console.log("📊 Data kehadiran terbaca:", attendanceRecords);
     updateAttendanceToday();
     updateChart();
   } catch (e) {
@@ -186,24 +189,16 @@ async function loadAttendance() {
   }
 }
 
-function parseTanggal(val) {
-  if (!val) return "";
-  // Jika sudah format YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
-
-  // Jika berupa objek tanggal (misal "Thu Nov 06 2025 ...")
-  const d = new Date(val);
+// fungsi bantu untuk pastikan semua tanggal jadi format YYYY-MM-DD
+function normalizeDate(value) {
+  if (!value) return "";
+  // kalau sudah format yyyy-mm-dd, langsung pakai
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  // kalau format tanggal lain
+  const d = new Date(value);
   if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
-
-  // Jika berupa angka (misalnya 45361, format tanggal Excel)
-  if (!isNaN(val)) {
-    const excelEpoch = new Date(1899, 11, 30);
-    const converted = new Date(excelEpoch.getTime() + val * 24 * 60 * 60 * 1000);
-    return converted.toISOString().split("T")[0];
-  }
-
-  // fallback
-  return String(val).trim();
+  // kalau masih aneh, pakai string mentah
+  return String(value).trim();
 }
 
 /* === SIMPAN DATA === */
@@ -280,28 +275,32 @@ function editGuru(i) {
 
 /* === GRAFIK HARIAN === */
 function updateChart() {
-  const today = new Date().toISOString().split('T')[0];
-  const todayData = attendanceRecords.filter(r => r.tanggal === today);
+  const today = new Date().toISOString().split("T")[0];
+  const todayData = attendanceRecords.filter(r => normalizeDate(r.tanggal) === today);
+
   console.log("📅 Filter hari ini:", today, "Data cocok:", todayData);
 
   const counts = { Hadir: 0, Izin: 0, Sakit: 0, "Dinas Luar": 0 };
   todayData.forEach(r => {
-    if (counts[r.status] !== undefined) counts[r.status]++;
+    if (counts.hasOwnProperty(r.status)) counts[r.status]++;
   });
 
-  const ctx = document.getElementById('dailyChart').getContext('2d');
-  if (dailyChart) dailyChart.destroy();
+  const ctx = document.getElementById("dailyChart").getContext("2d");
+  if (window.dailyChart) window.dailyChart.destroy();
 
-  dailyChart = new Chart(ctx, {
-    type: 'bar',
+  window.dailyChart = new Chart(ctx, {
+    type: "bar",
     data: {
-      labels: ['Hadir', 'Izin', 'Sakit', 'Dinas Luar'],
+      labels: ["Hadir", "Izin", "Sakit", "Dinas Luar"],
       datasets: [{
-        label: 'Jumlah Guru',
+        label: "Jumlah Guru",
         data: [counts.Hadir, counts.Izin, counts.Sakit, counts["Dinas Luar"]],
-      }]
+      }],
     },
-    options: { responsive: true, plugins: { legend: { display: false } } }
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+    },
   });
 }
 
@@ -414,6 +413,7 @@ window.onload = async () => {
 
 </body>
 </html>
+
 
 
 
