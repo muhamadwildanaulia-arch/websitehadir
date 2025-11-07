@@ -151,12 +151,8 @@ function updateClock() {
 function switchTab(tab) {
   document.querySelectorAll('section[id^="content-"]').forEach(el => el.classList.add('hidden'));
   document.querySelectorAll('nav button').forEach(el => el.classList.remove('tab-active'));
-
-  const contentEl = document.getElementById(`content-${tab}`);
-  const tabEl = document.getElementById(`tab-${tab}`);
-
-  if (contentEl) contentEl.classList.remove('hidden');
-  if (tabEl) tabEl.classList.add('tab-active');
+  document.getElementById(`content-${tab}`).classList.remove('hidden');
+  document.getElementById(`tab-${tab}`).classList.add('tab-active');
 }
 
 /* === LOAD DATA DARI GOOGLE SHEET === */
@@ -239,12 +235,9 @@ function updateTeacherDropdown() {
   const select = document.getElementById('nama-guru-kehadiran');
   select.innerHTML = '<option value="">-- Pilih Guru --</option>';
   teachers.forEach(t => {
-    if (t.nama_guru) {
-      const opt = document.createElement('option');
-      opt.value = t.nama_guru;
-      opt.textContent = t.nama_guru;
-      select.appendChild(opt);
-    }
+    const opt = document.createElement('option');
+    opt.textContent = t.nama_guru;
+    select.appendChild(opt);
   });
 }
 
@@ -283,7 +276,7 @@ function editGuru(i) {
 /* === GRAFIK HARIAN === */
 function updateChart() {
   const today = new Date().toISOString().split("T")[0];
-  const todayData = attendanceRecords.filter(r => normalizeDate(r.tanggal) >= today);
+  const todayData = attendanceRecords.filter(r => normalizeDate(r.tanggal) === today);
 
   console.log("📅 Filter hari ini:", today, "Data cocok:", todayData);
 
@@ -421,8 +414,26 @@ window.onload = async () => {
   getLocation();
   await loadTeachers(); await loadAttendance();
 };
+  function switchTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+  document.getElementById(tabId).classList.remove('hidden');
+}
 
 </script>
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
