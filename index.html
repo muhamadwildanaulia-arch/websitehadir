@@ -287,10 +287,29 @@ function updateChart() {
 
   const ctx = document.getElementById("dailyChart").getContext("2d");
 
-  // ✅ Tambahkan pengecekan sebelum destroy
+  // ✅ aman: cek dulu sebelum destroy
   if (window.dailyChart && typeof window.dailyChart.destroy === "function") {
     window.dailyChart.destroy();
   }
+
+  // ✅ buat grafik baru
+  window.dailyChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: ["Hadir", "Izin", "Sakit", "Dinas Luar"],
+      datasets: [{
+        label: "Jumlah Guru",
+        data: [counts.Hadir, counts.Izin, counts.Sakit, counts["Dinas Luar"]],
+        backgroundColor: ["#4CAF50", "#FFC107", "#F44336", "#2196F3"]
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+}
 
   // buat grafik baru
   window.dailyChart = new Chart(ctx, {
@@ -420,6 +439,7 @@ window.onload = async () => {
 
 </body>
 </html>
+
 
 
 
