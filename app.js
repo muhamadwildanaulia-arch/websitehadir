@@ -2,8 +2,8 @@
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw1Hvqf8_pY8AoeI-MOzLHYQEX0hrlY9S7C07Wvmzzey_u4w5cAZpTVbAm1opzBTeMJ/exec";
 
 // >>> ISI KOORDINAT SEKOLAH <<< (wajib diubah agar fitur jarak akurat)
-const SCHOOL_LAT = -7.000000;  // contoh
-const SCHOOL_LON = 110.000000; // contoh
+const SCHOOL_LAT = -6.7010469;  // contoh
+const SCHOOL_LON = 107.0521643; // contoh
 const RADIUS_LIMIT_M = 100;    // 100 meter
 
 let teachers = [];
