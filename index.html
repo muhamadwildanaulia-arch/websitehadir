@@ -600,11 +600,18 @@ window.onload = async () => {
     await loadAttendance();
   }, 30000); // 30 detik
 };
+  
+  function logout() {
+  sessionStorage.removeItem("isAdmin");
+  alert("Anda telah logout!");
+  window.location.href = "admin.html";
+}
 
 </script>
 
 </body>
 </html>
+
 
 
 
