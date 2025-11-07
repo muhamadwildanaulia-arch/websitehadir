@@ -13,13 +13,11 @@
   <style>
     :root{
       --bg:#f4f6f9; --text:#1f2937; --card:#ffffff; --card-soft:#f9fafb;
-      --primary-900:#1e3a8a; --primary-800:#1e40af;
-      --ring:rgba(59,130,246,.5); --zebra:rgba(0,0,0,.02);
+      --primary-900:#1e3a8a; --primary-800:#1e40af; --ring:rgba(59,130,246,.5); --zebra:rgba(0,0,0,.02);
     }
     .dark{
       --bg:#0f172a; --text:#e2e8f0; --card:#0b1220; --card-soft:#111827;
-      --primary-900:#0b3a91; --primary-800:#0e3ea8;
-      --ring:rgba(96,165,250,.5); --zebra:rgba(255,255,255,.05);
+      --primary-900:#0b3a91; --primary-800:#0e3ea8; --ring:rgba(96,165,250,.5); --zebra:rgba(255,255,255,.05);
     }
     body{ background:var(--bg); color:var(--text); }
     header.header-gradient{ background:linear-gradient(90deg,var(--primary-900),var(--primary-800)); }
@@ -56,126 +54,114 @@
     </div>
   </header>
 
-  <!-- NAV TAB ADMIN (scrollable di HP) -->
-  <div class="bg-blue-800 shadow-md sticky top-0 z-40">
-    <div class="max-w-6xl mx-auto">
-      <nav class="overflow-x-auto no-scrollbar">
-        <div class="min-w-max flex gap-2 px-2 py-2 text-white font-semibold whitespace-nowrap">
-          <button id="tab-admin-dashboard" class="tab-btn px-4 py-2 rounded-md tab-active focus-ring" onclick="switchAdminTab('dashboard')">📊 Dashboard</button>
-          <button id="tab-admin-guru" class="tab-btn px-4 py-2 rounded-md focus-ring" onclick="switchAdminTab('guru')">👩‍🏫 Data Guru</button>
-          <button id="tab-admin-laporan" class="tab-btn px-4 py-2 rounded-md focus-ring" onclick="switchAdminTab('laporan')">📑 Laporan Bulanan</button>
-        </div>
-      </nav>
-    </div>
-  </div>
+  <!-- NAV TAB ADMIN -->
+  <nav class="flex justify-center text-white font-semibold shadow-md sticky top-0 z-40" style="background-color: var(--primary-800);">
+    <button id="tab-admin-dashboard" class="tab-btn px-6 py-3 tab-active focus-ring" onclick="switchAdminTab('dashboard')">📊 Dashboard</button>
+    <button id="tab-admin-guru" class="tab-btn px-6 py-3 focus-ring" onclick="switchAdminTab('guru')">👩‍🏫 Data Guru</button>
+    <button id="tab-admin-laporan" class="tab-btn px-6 py-3 focus-ring" onclick="switchAdminTab('laporan')">📑 Laporan Bulanan</button>
+  </nav>
 
   <!-- TAB: DASHBOARD -->
   <section id="admin-dashboard" class="p-6">
-    <div class="max-w-6xl mx-auto space-y-6">
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <div class="elev-card p-4">
-          <p class="text-xs uppercase opacity-70">Total Guru</p>
-          <p id="totalGuru" class="text-3xl font-bold mt-1">0</p>
-        </div>
-        <div class="elev-card p-4">
-          <p class="text-xs uppercase opacity-70">Hadir Hari Ini</p>
-          <p id="hadirHariIni" class="text-3xl font-bold mt-1">0</p>
-        </div>
-        <div class="elev-card p-4">
-          <p class="text-xs uppercase opacity-70">Tidak Hadir</p>
-          <p id="tidakHadirHariIni" class="text-3xl font-bold mt-1">0</p>
-        </div>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div class="elev-card p-4">
+        <p class="text-xs uppercase opacity-70">Total Guru</p>
+        <p id="totalGuru" class="text-3xl font-bold mt-1">0</p>
       </div>
-
-      <div class="elev-card p-5">
-        <h2 class="text-lg font-semibold mb-3" style="color:var(--primary-900)">Komposisi Kehadiran Hari Ini</h2>
-        <div class="relative" style="height:260px;">
-          <canvas id="chartKehadiran" height="160" style="max-height:260px" aria-label="Grafik komposisi kehadiran"></canvas>
-        </div>
-        <p class="text-xs opacity-70 mt-2">Grafik diperbarui saat data kehadiran masuk.</p>
+      <div class="elev-card p-4">
+        <p class="text-xs uppercase opacity-70">Hadir Hari Ini</p>
+        <p id="hadirHariIni" class="text-3xl font-bold mt-1">0</p>
       </div>
+      <div class="elev-card p-4">
+        <p class="text-xs uppercase opacity-70">Tidak Hadir</p>
+        <p id="tidakHadirHariIni" class="text-3xl font-bold mt-1">0</p>
+      </div>
+    </div>
 
-      <div class="elev-card p-5">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-semibold" style="color:var(--primary-900)">Ringkas Daftar Guru</h2>
-          <span class="text-xs opacity-70">Avatar inisial otomatis</span>
-        </div>
-        <div class="overflow-auto">
-          <table class="w-full border-collapse border text-sm">
-            <thead>
-              <tr>
-                <th class="border p-2">Nama Guru</th>
-                <th class="border p-2">NIP</th>
-                <th class="border p-2">Jabatan</th>
-                <th class="border p-2">Status</th>
-              </tr>
-            </thead>
-            <tbody id="tabelGuru"></tbody>
-          </table>
-        </div>
+    <div class="elev-card p-5 mt-6">
+      <h2 class="text-lg font-semibold mb-3" style="color:var(--primary-900)">Komposisi Kehadiran Hari Ini</h2>
+      <div class="relative" style="height:260px;">
+        <canvas id="chartKehadiran" height="160" style="max-height:260px" aria-label="Grafik komposisi kehadiran"></canvas>
+      </div>
+      <p class="text-xs opacity-70 mt-2">Grafik diperbarui saat data kehadiran masuk.</p>
+    </div>
+
+    <div class="elev-card p-5 mt-6">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold" style="color:var(--primary-900)">Ringkas Daftar Guru</h2>
+        <span class="text-xs opacity-70">Avatar inisial otomatis</span>
+      </div>
+      <div class="overflow-auto">
+        <table class="w-full border-collapse border text-sm">
+          <thead>
+            <tr>
+              <th class="border p-2">Nama Guru</th>
+              <th class="border p-2">NIP</th>
+              <th class="border p-2">Jabatan</th>
+              <th class="border p-2">Status</th>
+            </tr>
+          </thead>
+          <tbody id="tabelGuru"></tbody>
+        </table>
       </div>
     </div>
   </section>
 
   <!-- TAB: DATA GURU -->
   <section id="admin-guru" class="hidden p-6">
-    <div class="max-w-6xl mx-auto">
-      <h2 class="text-xl font-semibold mb-4" style="color:var(--primary-900)">Manajemen Data Guru</h2>
-      <form id="guru-form" class="grid md:grid-cols-2 gap-3 elev-card p-5">
-        <input id="nama-guru" type="text" class="border p-2 rounded focus-ring" placeholder="Nama Guru" required>
-        <input id="nip-guru" type="text" class="border p-2 rounded focus-ring" placeholder="NIP">
-        <input id="jabatan-guru" type="text" class="border p-2 rounded focus-ring" placeholder="Jabatan">
-        <select id="status-kepegawaian" class="border p-2 rounded focus-ring">
-          <option value="PNS">PNS</option>
-          <option value="PPPK">PPPK</option>
-          <option value="Honorer">Honorer</option>
-        </select>
-        <button type="submit" class="bg-green-700 hover:bg-green-800 text-white px-6 py-2 rounded-lg md:col-span-2 mt-2 focus-ring">
-          Tambah / Update Guru
-        </button>
-      </form>
+    <h2 class="text-xl font-semibold mb-4" style="color:var(--primary-900)">Manajemen Data Guru</h2>
+    <form id="guru-form" class="grid md:grid-cols-2 gap-3 elev-card p-5">
+      <input id="nama-guru" type="text" class="border p-2 rounded focus-ring" placeholder="Nama Guru" required>
+      <input id="nip-guru" type="text" class="border p-2 rounded focus-ring" placeholder="NIP">
+      <input id="jabatan-guru" type="text" class="border p-2 rounded focus-ring" placeholder="Jabatan">
+      <select id="status-kepegawaian" class="border p-2 rounded focus-ring">
+        <option value="PNS">PNS</option>
+        <option value="PPPK">PPPK</option>
+        <option value="Honorer">Honorer</option>
+      </select>
+      <button type="submit" class="bg-green-700 hover:bg-green-800 text-white px-6 py-2 rounded-lg md:col-span-2 mt-2 focus-ring">
+        Tambah / Update Guru
+      </button>
+    </form>
 
-      <div class="elev-card mt-6 p-5">
-        <h3 class="text-lg font-semibold mb-3" style="color:var(--primary-900)">Daftar Guru</h3>
-        <div class="overflow-auto">
-          <table class="w-full border-collapse border text-sm">
-            <thead>
-              <tr>
-                <th class="border p-2">Nama Guru</th>
-                <th class="border p-2">NIP</th>
-                <th class="border p-2">Jabatan</th>
-                <th class="border p-2">Status</th>
-                <th class="border p-2">Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="guru-list"></tbody>
-          </table>
-        </div>
+    <div class="elev-card mt-6 p-5">
+      <h3 class="text-lg font-semibold mb-3" style="color:var(--primary-900)">Daftar Guru</h3>
+      <div class="overflow-auto">
+        <table class="w-full border-collapse border text-sm">
+          <thead>
+            <tr>
+              <th class="border p-2">Nama Guru</th>
+              <th class="border p-2">NIP</th>
+              <th class="border p-2">Jabatan</th>
+              <th class="border p-2">Status</th>
+              <th class="border p-2">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="guru-list"></tbody>
+        </table>
       </div>
     </div>
   </section>
 
   <!-- TAB: LAPORAN BULANAN -->
   <section id="admin-laporan" class="hidden p-6">
-    <div class="max-w-6xl mx-auto">
-      <h2 class="text-xl font-semibold mb-4" style="color:var(--primary-900)">Laporan Bulanan</h2>
-      <div class="elev-card p-5">
-        <label class="font-semibold">Pilih Bulan:</label>
-        <input type="month" id="bulan-laporan" class="border p-2 rounded ml-2 focus-ring" onchange="generateMonthlyReport()">
-        <div class="flex justify-end mt-3">
-          <button onclick="downloadMonthlyReport()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg focus-ring">
-            📥 Download Laporan (Excel)
-          </button>
-        </div>
+    <h2 class="text-xl font-semibold mb-4" style="color:var(--primary-900)">Laporan Bulanan</h2>
+    <div class="elev-card p-5">
+      <label class="font-semibold">Pilih Bulan:</label>
+      <input type="month" id="bulan-laporan" class="border p-2 rounded ml-2 focus-ring" onchange="generateMonthlyReport()">
+      <div class="flex justify-end mt-3">
+        <button onclick="downloadMonthlyReport()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg focus-ring">
+          📥 Download Laporan (Excel)
+        </button>
       </div>
-
-      <div class="elev-card mt-5 p-5 overflow-auto">
-        <h3 class="text-lg font-semibold mb-3" style="color:var(--primary-900)">Rekap Kehadiran Bulan Ini</h3>
-        <table id="tabel-laporan" class="w-full border-collapse border text-sm min-w-max"></table>
-      </div>
-
-      <div id="resume-laporan" class="elev-card mt-6 p-5"></div>
     </div>
+
+    <div class="elev-card mt-5 p-5 overflow-auto">
+      <h3 class="text-lg font-semibold mb-3" style="color:var(--primary-900)">Rekap Kehadiran Bulan Ini</h3>
+      <table id="tabel-laporan" class="w-full border-collapse border text-sm min-w-max"></table>
+    </div>
+
+    <div id="resume-laporan" class="elev-card mt-6 p-5"></div>
   </section>
 
   <!-- App logic -->
@@ -207,7 +193,7 @@
       const icon = document.getElementById('theme-icon'); if(icon) icon.textContent = isDark ? '☀️' : '🌙';
     });
 
-    // Helper: switch tab admin
+    // Tab admin (tidak bentrok dengan switchTab di index)
     function switchAdminTab(tab){
       const ids = ['dashboard','guru','laporan'];
       ids.forEach(id => {
@@ -217,22 +203,23 @@
       document.getElementById('admin-'+tab).classList.remove('hidden');
       document.getElementById('tab-admin-'+tab).classList.add('tab-active');
 
-      // render sesuai tab
+      // Saat masuk tab dashboard, render ulang statistik
       if (tab === 'dashboard' && typeof loadDashboard === 'function') loadDashboard();
-      if (tab === 'laporan' && document.getElementById('bulan-laporan')?.value && typeof generateMonthlyReport === 'function') generateMonthlyReport();
+      // Saat masuk tab laporan dan bulan sudah dipilih, regen tabel
+      if (tab === 'laporan' && document.getElementById('bulan-laporan')?.value) {
+        if (typeof generateMonthlyReport === 'function') generateMonthlyReport();
+      }
+      // Saat masuk tab guru, pastikan daftar terisi
       if (tab === 'guru' && typeof updateTeacherList === 'function') updateTeacherList();
     }
 
-    // Aktifkan tab default saat load (agar tidak "hilang")
+    // Muat data dashboard saat halaman siap
     window.addEventListener('load', () => {
-      switchAdminTab('dashboard'); // pastikan nav state benar
       if (typeof loadDashboard === 'function') loadDashboard();
     });
-
-    // Saat attendance di-refresh dari app.js, perbarui kartu/grafik
+    // Perbarui kartu/grafik saat attendance di-refresh
     document.addEventListener('attendance-updated', () => {
-      const dashVisible = !document.getElementById('admin-dashboard').classList.contains('hidden');
-      if (dashVisible && typeof loadDashboard === 'function') loadDashboard();
+      if (typeof loadDashboard === 'function') loadDashboard();
     });
   </script>
 </body>
