@@ -35,6 +35,9 @@
     /* avatar untuk app.js */
     .avatar{ width:2rem; height:2rem; border-radius:9999px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:.875rem; color:#fff; flex-shrink:0; }
     .name-cell{ display:inline-flex; align-items:center; gap:.5rem; }
+    /* pratinjau foto */
+    .preview-wrap{ display:flex; align-items:center; gap:.75rem; margin-top:.5rem; }
+    .preview-img{ width:180px; max-height:220px; object-fit:cover; border-radius:.5rem; box-shadow:0 2px 8px rgba(0,0,0,.12); }
   </style>
 </head>
 <body class="font-sans">
@@ -97,10 +100,24 @@
             <option value="Dinas Luar">Dinas Luar</option>
           </select>
         </div>
+
         <div class="md:col-span-2">
           <label class="font-semibold">Keterangan Lokasi (otomatis)</label>
           <input id="keterangan-lokasi" type="text" class="w-full border p-2 rounded focus-ring" readonly placeholder="Menentukan lokasi...">
         </div>
+
+        <!-- >>> Tambahan: Foto Kehadiran (PRATINJAU SAJA) -->
+        <div class="md:col-span-2">
+          <label class="font-semibold">Foto Kehadiran (opsional)</label>
+          <input id="foto-kehadiran" type="file" accept="image/*" capture="environment" class="w-full border p-2 rounded focus-ring">
+          <div id="foto-preview-wrap" class="preview-wrap hidden">
+            <img id="preview-foto" alt="Pratinjau foto kehadiran" class="preview-img">
+            <button type="button" id="hapus-foto" class="px-3 py-2 rounded-md bg-gray-200 hover:bg-gray-300 focus-ring">Hapus Foto</button>
+          </div>
+          <p class="text-xs opacity-70 mt-1">Foto hanya untuk pratinjau lokal dan tidak dikirim ke server.</p>
+        </div>
+        <!-- <<< Akhir tambahan -->
+
         <div class="md:col-span-2 text-center">
           <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-lg mt-2 focus-ring">Simpan Kehadiran</button>
         </div>
@@ -141,9 +158,9 @@
   <!-- App logic -->
   <script src="app.js"></script>
 
-  <!-- Inisialisasi ringan -->
+  <!-- Inisialisasi ringan + logika pratinjau foto -->
   <script>
-    // Tanggal & sapaan
+    // ====== Tanggal & sapaan
     (function(){
       const now = new Date();
       const hari = now.toLocaleDateString('id-ID', { weekday:'long' });
@@ -154,7 +171,7 @@
       document.getElementById('greet').textContent = `${sapaan}, Guru!`;
     })();
 
-    // Dark mode
+    // ====== Dark mode
     (function initTheme(){
       try{
         const saved = localStorage.getItem('theme');
@@ -170,7 +187,7 @@
       const icon = document.getElementById('theme-icon'); if(icon) icon.textContent = isDark ? '☀️' : '🌙';
     });
 
-    // Toast & confetti (ringan)
+    // ====== Toast & confetti (ringan)
     function showToast(){
       const el = document.getElementById('toast');
       el.classList.remove('hide'); el.classList.add('show'); el.style.opacity = '1';
@@ -181,7 +198,30 @@
       setTimeout(()=>{ shootConfetti(); showToast(); }, 50);
     });
 
-    // Jam analog (backup)
+    // ====== Pratinjau Foto (lokal saja, tidak dikirim)
+    const inputFoto = document.getElementById('foto-kehadiran');
+    const wrapPreview = document.getElementById('foto-preview-wrap');
+    const imgPreview = document.getElementById('preview-foto');
+    const btnHapus = document.getElementById('hapus-foto');
+
+    inputFoto?.addEventListener('change', e => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) { wrapPreview.classList.add('hidden'); imgPreview.src = ''; return; }
+      const reader = new FileReader();
+      reader.onload = ev => {
+        imgPreview.src = ev.target.result;
+        wrapPreview.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    });
+
+    btnHapus?.addEventListener('click', () => {
+      inputFoto.value = '';
+      imgPreview.src = '';
+      wrapPreview.classList.add('hidden');
+    });
+
+    // ====== Jam analog (backup)
     window.addEventListener('load', () => { if (typeof drawAnalogClock === 'function') drawAnalogClock(); });
   </script>
 </body>
