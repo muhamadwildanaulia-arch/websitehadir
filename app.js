@@ -1,9 +1,8 @@
-// app.js — robust index script: fetch no-cache, search dropdown, anti-duplikat 1x/hari,
-// late after 07:30, geofence 100m (coords set), photo preview (local only), doughnut chart light.
+// app.js — tanpa fitur pencarian; robust fetch, foto pratinjau lokal, anti-duplikat, terlambat 07:30, geofence 100m, doughnut chart.
 
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw1Hvqf8_pY8AoeI-MOzLHYQEX0hrlY9S7C07Wvmzzey_u4w5cAZpTVbAm1opzBTeMJ/exec";
 
-// KOORDINAT SEKOLAH (isi dari link yang kamu berikan)
+// KOORDINAT SEKOLAH (sudah kamu isi)
 const SCHOOL_LAT = -6.7010469;
 const SCHOOL_LON = 107.0521643;
 const RADIUS_LIMIT_M = 100;
@@ -61,7 +60,6 @@ async function loadTeachers(){
     else if (raw && Array.isArray(raw.values)) rows = raw.values;
     else rows = [];
     if (!rows.length){ teachers = []; updateTeacherDropdown(); return; }
-    // detect header row
     const first = rows[0];
     const dataRows = (Array.isArray(first) && first.some(c => /nama|nip|jabatan|status/i.test(String(c)))) ? rows.slice(1) : rows;
     teachers = dataRows.map(r => {
@@ -109,7 +107,7 @@ async function saveAttendance(d){
 
 /* ---------- UI helpers ---------- */
 function updateTeacherDropdown(){
-  const sel = document.getElementById('nama-guru-kehadiran'), search = document.getElementById('search-guru');
+  const sel = document.getElementById('nama-guru-kehadiran');
   if(!sel) return;
   const prev = sel.value || '';
   sel.innerHTML = '';
@@ -124,19 +122,6 @@ function updateTeacherDropdown(){
   });
   if(prev && Array.from(sel.options).some(o=>o.value===prev)) sel.value = prev;
   attachAlreadyCheckedWarning(sel);
-
-  if(search){
-    const doFilter = () => {
-      const q = normalizeName(search.value);
-      Array.from(sel.options).forEach(opt => {
-        if(!opt.value) return;
-        opt.hidden = q ? !normalizeName(opt.value).includes(q) : false;
-      });
-    };
-    search.removeEventListener('input', debounce(doFilter,100));
-    search.addEventListener('input', debounce(doFilter,100));
-    if(search.value && search.value.trim()) doFilter();
-  }
 }
 
 /* attendance list */
@@ -375,35 +360,8 @@ window.addEventListener('load', async ()=>{
   document.getElementById('nama-guru-kehadiran')?.addEventListener('change', ()=> updateDuplicateAndBanners());
   setInterval(()=> updateLateBanner(), 60000);
   setInterval(async ()=> { await loadAttendance(); }, 60000);
-
-  // fallback UI: if select stays empty create clickable list
-  (function fallbackList(){
-    setTimeout(()=> {
-      const sel = document.getElementById('nama-guru-kehadiran');
-      if(!sel || (sel.options && sel.options.length>1)) return;
-      const wrap = document.createElement('div'); wrap.style.marginTop='8px';
-      if(teachers && teachers.length){
-        teachers.forEach(t => {
-          const b = document.createElement('button'); b.type='button'; b.textContent = t.nama_guru; b.style.margin='4px'; b.style.padding='8px'; b.style.borderRadius='8px'; b.style.border='1px solid #eee'; b.style.background='#fff';
-          b.addEventListener('click', ()=>{ if(sel){ if(!Array.from(sel.options).some(o=>o.value===t.nama_guru)){ const o=document.createElement('option'); o.value=t.nama_guru; o.textContent=t.nama_guru; sel.appendChild(o);} sel.value=t.nama_guru; sel.dispatchEvent(new Event('change')); } });
-          wrap.appendChild(b);
-        });
-        const parent = document.getElementById('search-guru')?.parentElement || document.getElementById('attendance-form');
-        parent && parent.appendChild(wrap);
-      }
-    }, 600);
-  })();
 });
 
-/* ---------- small helpers for external use ---------- */
+/* ---------- small helpers ---------- */
 window.editGuru = function(i){ const g = teachers[i]; try{ document.getElementById('nama-guru').value = g.nama_guru; }catch(e){} };
 window.switchTab = function(){};
-
-/* ---------- optional debug helper (visible on page when needed) ---------- */
-/* Uncomment block below to enable visual debug box (temporary) */
-/*
-(function addDebugBox(){
-  const box = document.createElement('div'); box.style.position='fixed'; box.style.right='12px'; box.style.bottom='12px'; box.style.background='rgba(0,0,0,.7)'; box.style.color='#fff'; box.style.padding='8px 10px'; box.style.borderRadius='8px'; box.style.zIndex=99999; box.id='debug-box'; box.textContent='debug...'; document.body.appendChild(box);
-  (async ()=>{ try { const raw = await fetchJsonNoCache(GOOGLE_SCRIPT_URL+'?sheet=guru'); if(Array.isArray(raw)) box.textContent = 'rows='+raw.length; else if(raw && Array.isArray(raw.values)) box.textContent='rows='+raw.values.length; else box.textContent='ok'; } catch(e){ box.textContent='err'; } })();
-})();
-*/
