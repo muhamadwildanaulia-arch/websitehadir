@@ -40,8 +40,12 @@
   function switchTab(tab) {
     document.querySelectorAll('section[id^="content-"]').forEach(el => el.classList.add('hidden'));
     document.querySelectorAll('nav button').forEach(el => el.classList.remove('tab-active'));
-    document.getElementById(`content-${tab}`).classList.remove('hidden');
-    document.getElementById(`tab-${tab}`).classList.add('tab-active');
+
+    const contentEl = document.getElementById(`content-${tab}`);
+    const tabEl = document.getElementById(`tab-${tab}`);
+
+    if (contentEl) contentEl.classList.remove('hidden');
+    if (tabEl) tabEl.classList.add('tab-active');
   }
 
   // === FUNGSI LOAD GURU ===
@@ -171,3 +175,4 @@
   </script>
 </body>
 </html>
+
