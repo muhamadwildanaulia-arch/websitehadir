@@ -19,7 +19,6 @@
     .banner-danger{background:#FEE2E2;border-left:4px solid #EF4444;color:#991B1B}
     .badge{padding:.2rem .5rem;border-radius:999px;font-size:.8rem}
     #dailyChart{max-height:220px}
-    /* small helpers */
     .muted{opacity:.8}
     .hidden{display:none}
   </style>
@@ -63,8 +62,7 @@
       <h2 style="margin:0 0 .6rem 0;color:var(--primary)">Form Kehadiran Guru</h2>
       <form id="attendance-form" class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label style="font-weight:600">Cari / Nama Guru</label>
-          <input id="search-guru" type="text" placeholder="Cari nama guru..." class="w-full p-2 border rounded" style="margin-top:.4rem">
+          <label style="font-weight:600">Nama Guru</label>
           <select id="nama-guru-kehadiran" class="w-full p-2 border rounded mt-2" required>
             <option value="">-- Pilih Guru --</option>
           </select>
@@ -134,16 +132,12 @@
   <script src="app.js"></script>
 
   <script>
-    // small initial UI setup
     (function(){
       const now = new Date();
       document.getElementById('current-date').textContent = now.toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
       document.getElementById('eco-toggle').addEventListener('change', e => {
         try { localStorage.setItem('ecoMode', e.target.checked ? '1' : '0'); document.body.classList.toggle('eco', e.target.checked); } catch(e){}
       });
-      // foto preview handlers wired in app.js too but keep a fallback init
-      document.getElementById('toggle-theme')?.addEventListener?.('click', ()=>document.documentElement.classList.toggle('dark'));
-      // init clock (drawAnalogClock from app.js)
       window.addEventListener('load', ()=>{ if (typeof drawAnalogClock === 'function') drawAnalogClock(); });
     })();
   </script>
