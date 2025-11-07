@@ -1,22 +1,27 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Dashboard Admin | SDN Muhara</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background-color: #f4f6f9; }
+  </style>
 </head>
-<body class="bg-gray-100 font-sans">
-  <!-- HEADER -->
-  <header class="bg-blue-900 text-white p-5 flex justify-between items-center shadow">
-    <h1 class="text-xl font-bold">📊 Dashboard Admin SDN Muhara</h1>
-    <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">Logout</button>
+<body class="font-sans text-gray-800">
+  <header class="bg-blue-900 text-white p-5 shadow flex items-center justify-between">
+    <div class="flex items-center space-x-4">
+      <img src="SD_Negeri_Muhara.png" alt="Logo" class="h-16 rounded bg-white p-1">
+      <h1 class="text-2xl font-bold">Dashboard Admin - SDN Muhara</h1>
+    </div>
+    <div>
+      <button id="logoutBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">Logout</button>
+    </div>
   </header>
 
-  <!-- ISI DASHBOARD -->
   <main class="p-6 space-y-6">
-    <!-- Statistik Ringkas -->
     <section class="grid md:grid-cols-3 gap-4">
       <div class="bg-white shadow rounded-xl p-4 text-center">
         <h2 class="text-gray-500 text-sm">Total Guru</h2>
@@ -27,18 +32,16 @@
         <p id="hadirHariIni" class="text-3xl font-bold text-green-600">0</p>
       </div>
       <div class="bg-white shadow rounded-xl p-4 text-center">
-        <h2 class="text-gray-500 text-sm">Izin / Sakit / Dinas Luar</h2>
+        <h2 class="text-gray-500 text-sm">Izin / Sakit / Dinas</h2>
         <p id="tidakHadirHariIni" class="text-3xl font-bold text-yellow-600">0</p>
       </div>
     </section>
 
-    <!-- Grafik Kehadiran -->
     <section class="bg-white p-6 rounded-xl shadow">
       <h2 class="text-lg font-semibold text-blue-800 mb-3">Grafik Kehadiran Hari Ini</h2>
       <canvas id="chartKehadiran" height="120"></canvas>
     </section>
 
-    <!-- Data Guru -->
     <section class="bg-white p-6 rounded-xl shadow">
       <h2 class="text-lg font-semibold text-blue-800 mb-3">Daftar Guru</h2>
       <table class="w-full border-collapse border text-sm">
@@ -55,74 +58,24 @@
     </section>
   </main>
 
+  <script src="app.js"></script>
   <script>
-  // 🧠 Cegah akses tanpa login
-  if (!sessionStorage.getItem("isAdmin")) {
-    alert("⚠️ Anda belum login sebagai admin!");
-    window.location.href = "admin.html";
-  }
-
-  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw1Hvqf8_pY8AoeI-MOzLHYQEX0hrlY9S7C07Wvmzzey_u4w5cAZpTVbAm1opzBTeMJ/exec";
-
-  async function loadDashboard() {
-    try {
-      // Ambil data guru
-      const guruRes = await fetch(GOOGLE_SCRIPT_URL + "?sheet=guru");
-      const guruData = await guruRes.json();
-      const guruList = guruData.slice(1);
-      document.getElementById("totalGuru").textContent = guruList.length;
-      document.getElementById("tabelGuru").innerHTML = guruList.map(g => `
-        <tr>
-          <td class="border p-2">${g[0]}</td>
-          <td class="border p-2">${g[1]}</td>
-          <td class="border p-2">${g[2]}</td>
-          <td class="border p-2">${g[3]}</td>
-        </tr>`).join("");
-
-      // Ambil data kehadiran
-      const hadirRes = await fetch(GOOGLE_SCRIPT_URL + "?sheet=kehadiran");
-      const hadirData = await hadirRes.json();
-      const dataKehadiran = hadirData.slice(1).map(r => ({
-        nama: r[0], status: r[1], tanggal: r[3]
-      }));
-
-      const today = new Date().toISOString().split("T")[0];
-      const hariIni = dataKehadiran.filter(r => r.tanggal.startsWith(today));
-      const totalHadir = hariIni.filter(r => r.status === "Hadir").length;
-      const totalTidak = hariIni.length - totalHadir;
-
-      document.getElementById("hadirHariIni").textContent = totalHadir;
-      document.getElementById("tidakHadirHariIni").textContent = totalTidak;
-
-      // Tampilkan grafik
-      const counts = { Hadir: 0, Izin: 0, Sakit: 0, "Dinas Luar": 0 };
-      hariIni.forEach(r => counts[r.status] = (counts[r.status] || 0) + 1);
-
-      const ctx = document.getElementById("chartKehadiran").getContext("2d");
-      new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: Object.keys(counts),
-          datasets: [{
-            label: "Jumlah Guru",
-            data: Object.values(counts),
-            backgroundColor: ["#4CAF50", "#FFC107", "#F44336", "#2196F3"]
-          }]
-        },
-        options: { responsive: true, plugins: { legend: { display: false } } }
-      });
-    } catch (err) {
-      console.error("Gagal memuat dashboard:", err);
+    // cek admin
+    if (!sessionStorage.getItem('isAdmin')) {
+      alert('Harap login sebagai admin!');
+      window.location.href = 'admin.html';
     }
-  }
 
-  function logout() {
-    sessionStorage.removeItem("isAdmin");
-    alert("Anda telah logout!");
-    window.location.href = "admin.html";
-  }
+    // fungsi logout (dashboard)
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      sessionStorage.removeItem('isAdmin');
+      window.location.href = 'admin.html';
+    });
 
-  window.onload = loadDashboard;
+    // ketika dashboard dimuat, app.js akan menyediakan fungsi loadDashboard()
+    window.addEventListener('load', () => {
+      if (typeof loadDashboard === 'function') loadDashboard();
+    });
   </script>
 </body>
 </html>
