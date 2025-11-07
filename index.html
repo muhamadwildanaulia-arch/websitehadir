@@ -311,26 +311,7 @@ function updateChart() {
   });
 }
 
-  // buat grafik baru
-  window.dailyChart = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: ["Hadir", "Izin", "Sakit", "Dinas Luar"],
-      datasets: [{
-        label: "Jumlah Guru",
-        data: [counts.Hadir, counts.Izin, counts.Sakit, counts["Dinas Luar"]],
-        backgroundColor: ["#4CAF50", "#FFC107", "#F44336", "#2196F3"]
-      }],
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true } }
-    },
-  });
-}
-
-/* === LAPORAN BULANAN === */
+ /* === LAPORAN BULANAN === */
 function generateMonthlyReport() {
   const bulanInput = document.getElementById('bulan-laporan').value;
   if (!bulanInput) return;
@@ -439,6 +420,7 @@ window.onload = async () => {
 
 </body>
 </html>
+
 
 
 
