@@ -14,22 +14,22 @@
 </head>
 <body class="font-sans text-gray-800">
   <!-- HEADER -->
-  <header class="bg-blue-900 text-white p-5 shadow flex items-center justify-between">
-    <div class="flex items-center space-x-4">
-      <img src="SD_Negeri_Muhara.png" alt="Logo SDN Muhara" class="h-20 w-auto rounded-md bg-white p-1">
-      <div>
-        <h1 class="text-2xl font-bold">Aplikasi Kehadiran Guru SDN Muhara</h1>
-        <p id="current-date" class="text-sm opacity-80"></p>
-      </div>
+<header class="bg-blue-900 text-white p-4 shadow flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0">
+  <div class="flex items-center space-x-3">
+    <img src="SD_Negeri_Muhara.png" alt="Logo SDN Muhara" class="h-16 md:h-20 w-auto rounded-md bg-white p-1">
+    <div>
+      <h1 class="text-xl md:text-2xl font-bold leading-tight">Aplikasi Kehadiran Guru SDN Muhara</h1>
+      <p id="current-date" class="text-sm opacity-90"></p>
     </div>
+  </div>
 
-    <div class="flex items-center space-x-4">
-      <canvas id="analogClock" width="100" height="100" class="bg-white rounded-full shadow-md"></canvas>
-      <a href="admin.html" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md">
-        <span class="mr-2">👤</span><span>Masuk Admin</span>
-      </a>
-    </div>
-  </header>
+  <div class="flex items-center justify-between md:justify-end space-x-3">
+    <canvas id="analogClock" width="70" height="70" class="bg-white rounded-full shadow-md md:w-[100px] md:h-[100px]"></canvas>
+    <a href="admin.html" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md">
+      <span class="mr-1">👤</span><span>Masuk Admin</span>
+    </a>
+  </div>
+</header>
 
   <!-- NAV TAB -->
   <nav class="flex justify-center bg-blue-800 text-white font-semibold shadow-md">
