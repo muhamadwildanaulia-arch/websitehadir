@@ -1,4 +1,4 @@
-// app.js - versi mobile-friendly (ringan di HP)
+// app.js - versi mobile-friendly + anti-duplikasi absen harian
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw1Hvqf8_pY8AoeI-MOzLHYQEX0hrlY9S7C07Wvmzzey_u4w5cAZpTVbAm1opzBTeMJ/exec";
 
 let teachers = [];
@@ -25,9 +25,11 @@ function escapeHtml(str = "") {
 const debounce = (fn, ms=150) => {
   let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
 };
-function isTabActive(tab){ // 'kehadiran' | 'guru' | 'laporan'
+// PATCH: jika tidak ada sistem tab (index), anggap aktif
+function isTabActive(tab){
   const content = document.getElementById(`content-${tab}`);
-  return content && !content.classList.contains('hidden');
+  if (!content) return true;
+  return !content.classList.contains('hidden');
 }
 
 /* ===== Avatar Inisial Utils ===== */
@@ -79,9 +81,8 @@ async function loadAttendance() {
   try {
     const res = await fetch(GOOGLE_SCRIPT_URL + "?sheet=kehadiran");
     const data = await res.json();
-    attendanceRecords = data.slice(1).map(r => ({ nama_guru: r[0], status: r[1], jam: r[2], tanggal: normalizeDate(r[3]), lokasi: r[4] }));
+    attendanceRecords = data.slice(1).map(r => ({ nama_guru: r[0], status: r[1], jam: r[2], tanggal: normalizeDate(r[3]), lokasi: r[4], foto_url: r[5] || "" }));
     if (document.getElementById('attendance-list')) updateAttendanceToday();
-    // Update chart hanya jika tab Kehadiran sedang terlihat (hemat CPU)
     if (isTabActive('kehadiran')) updateChartDebounced();
     document.dispatchEvent(new Event('attendance-updated'));
   } catch (e) { console.error("loadAttendance:", e); }
@@ -127,6 +128,8 @@ function updateTeacherDropdown() {
     opt.value = t.nama_guru;
     select.appendChild(opt);
   });
+  // peringatan jika guru sudah absen hari ini
+  attachAlreadyCheckedWarning(select);
 }
 
 function isToday(dateStr) {
@@ -141,6 +144,7 @@ function updateAttendanceToday() {
   const todayData = attendanceRecords.filter(r => isToday(r.tanggal));
   if (!todayData.length) {
     tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4">Belum ada kehadiran hari ini</td></tr>`;
+    updateDuplicateNotice();
     return;
   }
   tbody.innerHTML = todayData.map(r => `
@@ -152,6 +156,42 @@ function updateAttendanceToday() {
       <td class="border p-2">${escapeHtml(r.tanggal)}</td>
     </tr>
   `).join('');
+  updateDuplicateNotice();
+}
+
+/* ===================== ANTI-DUPLIKASI ABSEN ===================== */
+function hasSubmittedToday(namaGuru){
+  if (!namaGuru) return false;
+  const todayISO = new Date().toISOString().split("T")[0];
+  return attendanceRecords.some(r => normalizeDate(r.tanggal) === todayISO && (r.nama_guru||"").trim() === namaGuru.trim());
+}
+
+// tampilkan peringatan di bawah dropdown jika sudah absen
+function attachAlreadyCheckedWarning(selectEl){
+  if (!selectEl) return;
+  let warn = document.getElementById('warn-sudah-absen');
+  if (!warn){
+    warn = document.createElement('div');
+    warn.id = 'warn-sudah-absen';
+    warn.className = 'text-sm mt-1';
+    selectEl.parentElement.appendChild(warn);
+  }
+  const update = () => {
+    const nama = selectEl.value;
+    if (nama && hasSubmittedToday(nama)) {
+      warn.innerHTML = '⚠️ <span class="text-yellow-700">Guru ini sudah mengisi kehadiran hari ini.</span>';
+    } else {
+      warn.textContent = '';
+    }
+  };
+  selectEl.addEventListener('change', update);
+  update();
+}
+
+// panggil setiap kali daftar attendance berubah agar label ikut update
+function updateDuplicateNotice(){
+  const selectEl = document.getElementById('nama-guru-kehadiran');
+  if (selectEl) attachAlreadyCheckedWarning(selectEl);
 }
 
 /* ===================== CHART (DOUGHNUT, SUPER RINGAN) ===================== */
@@ -160,6 +200,14 @@ function getTodayCounts(){
   const todayData = attendanceRecords.filter(r => normalizeDate(r.tanggal) === today);
   const counts = { Hadir: 0, Izin: 0, Sakit: 0, "Dinas Luar": 0 };
   todayData.forEach(r => { if (counts.hasOwnProperty(r.status)) counts[r.status]++; });
+  // update quick stats jika ada
+  const elH = document.getElementById('stat-hadir');
+  if (elH) {
+    document.getElementById('stat-hadir').textContent = counts.Hadir;
+    document.getElementById('stat-izin').textContent = counts.Izin;
+    document.getElementById('stat-sakit').textContent = counts.Sakit;
+    document.getElementById('stat-dl').textContent = counts["Dinas Luar"];
+  }
   return counts;
 }
 function sameCounts(a,b){
@@ -173,20 +221,16 @@ function ensureChart(){
   const ctx = canvas.getContext("2d");
   if (dailyChart) return dailyChart;
 
-  // opsi ringan: tanpa animasi, tanpa event hover, DPR 1
   dailyChart = new Chart(ctx, {
     type: "doughnut",
-    data: {
-      labels: ["Hadir","Izin","Sakit","Dinas Luar"],
-      datasets: [{ data: [0,0,0,0], borderWidth: 0 }]
-    },
+    data: { labels: ["Hadir","Izin","Sakit","Dinas Luar"], datasets: [{ data: [0,0,0,0], borderWidth: 0 }] },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       devicePixelRatio: 1,
       cutout: "62%",
       animation: false,
-      events: [], // matikan interaksi berat di HP
+      events: [],
       plugins: {
         legend: { position: "bottom", labels: { boxWidth: 12 } },
         tooltip: { enabled: true }
@@ -203,11 +247,11 @@ function updateChart() {
   if (!chart) return;
 
   const counts = getTodayCounts();
-  if (sameCounts(counts, lastCounts)) return; // tidak perlu render ulang
+  if (sameCounts(counts, lastCounts)) return;
 
   chart.data.datasets[0].data = [counts.Hadir, counts.Izin, counts.Sakit, counts["Dinas Luar"]];
   lastCounts = counts;
-  chart.update('none'); // update tanpa animasi
+  chart.update('none');
 }
 
 /* ===================== REPORT, CSV, GPS (tetap sama) ===================== */
@@ -234,13 +278,11 @@ function generateMonthlyReport() {
       const abs = dataBulan.find(r => r.nama_guru===nama && r.tanggal===tanggal);
       const s = abs ? abs.status[0] : '';
       if (abs && total.hasOwnProperty(abs.status)) total[abs.status]++;
-
       let warna = "";
       if (s === "H") warna = "bg-green-100 text-green-700 font-bold";
       else if (s === "I") warna = "bg-yellow-100 text-yellow-700 font-bold";
       else if (s === "S") warna = "bg-red-100 text-red-700 font-bold";
       else if (s === "D") warna = "bg-blue-100 text-blue-700 font-bold";
-
       html += `<td class='border text-center text-xs p-1 ${warna}'>${s}</td>`;
     }
     html += `</tr>`;
@@ -303,29 +345,44 @@ function getLocation() {
 /* ===================== EVENT LISTENERS ===================== */
 document.addEventListener('submit', async (e) => {
   if (!e.target) return;
+
+  // ATTENDANCE FORM
   if (e.target.id === 'attendance-form') {
     e.preventDefault();
+    const namaGuru = document.getElementById('nama-guru-kehadiran').value;
+    // Anti-duplikasi: blok kalau sudah absen hari ini
+    if (hasSubmittedToday(namaGuru)) {
+      alert('⚠️ Kehadiran untuk guru ini sudah tercatat hari ini. Terima kasih.');
+      return;
+    }
+
     const now = new Date();
     const data = {
-      nama_guru: document.getElementById('nama-guru-kehadiran').value,
+      nama_guru: namaGuru,
       status: document.getElementById('status-kehadiran').value,
       jam_hadir: now.toLocaleTimeString('id-ID'),
       tanggal: now.toISOString().split('T')[0],
       keterangan_lokasi: document.getElementById('keterangan-lokasi').value || ''
     };
+
+    // loading kecil
     const loading = document.createElement('div');
     loading.id = 'loading-msg';
     loading.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50';
     loading.innerHTML = `<div class="bg-white p-6 rounded-lg shadow-lg text-center"><p class="text-blue-700 font-semibold">⏳ Menyimpan...</p></div>`;
     document.body.appendChild(loading);
+
     await saveAttendance(data);
     setTimeout(async () => {
-      await loadAttendance();
+      await loadAttendance(); // setelah reload, cek peringatan lagi otomatis
       document.getElementById('loading-msg')?.remove();
     }, 600);
+
     e.target.reset();
+    updateDuplicateNotice(); // jaga-jaga
   }
 
+  // GURU FORM
   if (e.target.id === 'guru-form') {
     e.preventDefault();
     const d = {
@@ -389,7 +446,7 @@ async function loadDashboard() {
   }
 }
 
-/* ===================== TAB SWITCH ===================== */
+/* ===================== TAB SWITCH (index lama) ===================== */
 window.switchTab = function(tab) {
   document.querySelectorAll('section[id^="content-"]').forEach(el => el.classList.add('hidden'));
   document.querySelectorAll('nav button').forEach(el => el.classList.remove('tab-active'));
@@ -397,13 +454,11 @@ window.switchTab = function(tab) {
   const btn = document.getElementById(`tab-${tab}`);
   if (content) content.classList.remove('hidden');
   if (btn) btn.classList.add('tab-active');
-  // saat pindah ke Kehadiran, baru render/update chart (hemat resource)
   if (tab === 'kehadiran') updateChartDebounced();
 };
 
 /* ===================== INIT ===================== */
 window.addEventListener('load', async () => {
-  // tanggal header diatur di index, ini backup aman
   const cd = document.getElementById('current-date');
   if (cd) cd.textContent = new Date().toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
@@ -413,6 +468,5 @@ window.addEventListener('load', async () => {
   await loadTeachers();
   await loadAttendance();
 
-  // refresh periodik (lebih jarang agar ringan)
   setInterval(async () => { await loadAttendance(); }, 60000);
 });
