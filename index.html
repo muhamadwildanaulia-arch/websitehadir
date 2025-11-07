@@ -428,7 +428,13 @@ function generateMonthlyReport() {
   html += `</tr></thead><tbody>`;
   let total = { Hadir:0, Izin:0, Sakit:0, "Dinas Luar":0 };
   guruList.forEach(nama => {
-    html += `<tr><td class='border p-1 font-semibold'>${nama}</td>`;
+    let warna = "";
+    if (s === "H") warna = "bg-green-100 text-green-700 font-bold";
+    else if (s === "I") warna = "bg-yellow-100 text-yellow-700 font-bold";
+    else if (s === "S") warna = "bg-red-100 text-red-700 font-bold";
+    else if (s === "D") warna = "bg-blue-100 text-blue-700 font-bold";
+
+    html += `<td class='border text-center text-xs p-1 ${warna}'>${s}</td>`;
     for (let i = 1; i <= hariDalamBulan; i++) {
       const tanggal = `${tahun}-${bulan}-${String(i).padStart(2,'0')}`;
       const abs = dataBulan.find(r => r.nama_guru===nama && r.tanggal===tanggal);
@@ -664,6 +670,7 @@ window.onload = async () => {
 
 </body>
 </html>
+
 
 
 
