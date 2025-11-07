@@ -428,7 +428,9 @@ document.getElementById('attendance-form').addEventListener('submit', async e =>
 /* === INISIALISASI === */
 window.onload = async () => {
   document.getElementById('current-date').textContent =
-    new Date().toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+    new Date().toLocaleDateString('id-ID', { 
+      weekday:'long', year:'numeric', month:'long', day:'numeric' 
+    });
 
   updateClock();
   setInterval(updateClock, 1000);
@@ -437,7 +439,7 @@ window.onload = async () => {
   await loadTeachers();
   await loadAttendance();
 
-  // 🔁 Tambahan baru: auto-refresh data setiap 30 detik
+  // 🔁 Auto refresh data kehadiran setiap 30 detik
   setInterval(async () => {
     console.log("🔄 Memuat ulang data kehadiran...");
     await loadAttendance();
@@ -448,6 +450,7 @@ window.onload = async () => {
 
 </body>
 </html>
+
 
 
 
