@@ -7,26 +7,34 @@
 
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
 
   <style>
     :root { --bg:#f4f6f9; --text:#1f2937; --card:#ffffff; --card-soft:#f9fafb;
-      --primary-900:#1e3a8a; --primary-800:#1e40af; --ring:rgba(59,130,246,.5); --zebra:rgba(0,0,0,.02); }
+      --primary-900:#1e3a8a; --primary-800:#1e40af; --ring:rgba(59,130,246,.5);
+      --zebra:rgba(0,0,0,.02); --warn:#f59e0b; --danger:#ef4444; }
     .dark{ --bg:#0f172a; --text:#e2e8f0; --card:#0b1220; --card-soft:#111827;
-      --primary-900:#0b3a91; --primary-800:#0e3ea8; --ring:rgba(96,165,250,.5); --zebra:rgba(255,255,255,.05); }
+      --primary-900:#0b3a91; --primary-800:#0e3ea8; --ring:rgba(96,165,250,.5);
+      --zebra:rgba(255,255,255,.05); }
     body{ background:var(--bg); color:var(--text); }
     header.header-gradient{ background:linear-gradient(90deg,var(--primary-900),var(--primary-800)); }
     .elev-card{ background:var(--card); border-radius:.75rem; box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -2px rgba(0,0,0,.05); }
+    body.eco .elev-card{ box-shadow:none; }
     .focus-ring:focus{ outline:none; box-shadow:0 0 0 3px var(--ring); }
     thead th{ position:sticky; top:0; z-index:1; background:var(--card-soft); }
     tbody tr:nth-child(odd){ background:var(--zebra); }
-    #toast { transition: opacity .2s ease, transform .2s ease; }
-    #toast.show { opacity: 1; transform: translateY(0); }
-    #toast.hide { opacity: 0; transform: translateY(8px); }
     .avatar{ width:2rem; height:2rem; border-radius:9999px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:.875rem; color:#fff; flex-shrink:0; }
     .name-cell{ display:inline-flex; align-items:center; gap:.5rem; }
-    .preview-wrap{ display:flex; align-items:center; gap:.75rem; margin-top:.5rem; }
-    .preview-img{ width:180px; max-height:220px; object-fit:cover; border-radius:.5rem; box-shadow:0 2px 8px rgba(0,0,0,.12); }
+    .badge{ display:inline-flex; align-items:center; gap:.4rem; border-radius:9999px; padding:.25rem .6rem; font-size:.75rem; }
+    .badge-warn{ background:#FEF3C7; color:#92400E; }
+    .badge-danger{ background:#FEE2E2; color:#991B1B; }
+    .badge-good{ background:#DCFCE7; color:#166534; }
+    .banner{ border-left:4px solid; padding:.75rem 1rem; border-radius:.5rem; }
+    .banner-warn{ background:#FEF3C7; border-color:#F59E0B; color:#92400E; }
+    .banner-danger{ background:#FEE2E2; border-color:#EF4444; color:#991B1B; }
+    .banner-info{ background:#DBEAFE; border-color:#3B82F6; color:#1E3A8A; }
+    .muted{ opacity:.7 }
+    #status-info{ min-height: 1.2rem; }
+    #distance-info{ min-height: 1.2rem; }
   </style>
 </head>
 <body class="font-sans">
@@ -43,7 +51,15 @@
     </div>
 
     <div class="flex items-center gap-2">
-      <a href="dashboard.html" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md focus-ring">📊 Dashboard Admin</a>
+      <!-- Mode Hemat -->
+      <label class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md focus-ring cursor-pointer">
+        <input id="eco-toggle" type="checkbox" class="mr-2">
+        Mode Hemat
+      </label>
+
+      <a href="dashboard.html" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md focus-ring">
+        📊 Dashboard Admin
+      </a>
       <button id="toggle-theme" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md focus-ring">
         <span id="theme-icon" class="mr-1">🌙</span><span>Mode</span>
       </button>
@@ -51,27 +67,44 @@
     </div>
   </header>
 
+  <!-- BANNER INFO DI BAWAH HEADER -->
+  <section class="p-4 max-w-5xl mx-auto space-y-2">
+    <div id="already-banner" class="banner banner-warn hidden">
+      ⚠️ Guru ini <b>sudah absen hari ini</b>. Pengisian kedua tidak diperbolehkan.
+    </div>
+    <div id="late-banner" class="banner banner-danger hidden">
+      ⏰ <b>Terlambat</b>: Anda mengisi setelah batas 07:30. <span id="late-minutes"></span>
+    </div>
+    <div id="distance-banner" class="banner banner-info hidden">
+      📍 <span id="distance-text">Menghitung jarak dari sekolah…</span>
+    </div>
+  </section>
+
   <!-- STAT KILAT -->
   <section class="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-    <div class="elev-card p-4 flex items-center justify-between"><div><p class="text-xs uppercase opacity-70">Hadir</p><p id="stat-hadir" class="text-2xl font-bold">0</p></div><span class="text-2xl">✅</span></div>
-    <div class="elev-card p-4 flex items-center justify-between"><div><p class="text-xs uppercase opacity-70">Izin</p><p id="stat-izin" class="text-2xl font-bold">0</p></div><span class="text-2xl">📝</span></div>
-    <div class="elev-card p-4 flex items-center justify-between"><div><p class="text-xs uppercase opacity-70">Sakit</p><p id="stat-sakit" class="text-2xl font-bold">0</p></div><span class="text-2xl">🤒</span></div>
-    <div class="elev-card p-4 flex items-center justify-between"><div><p class="text-xs uppercase opacity-70">Dinas Luar</p><p id="stat-dl" class="text-2xl font-bold">0</p></div><span class="text-2xl">🚗</span></div>
+    <div class="elev-card p-4 flex items-center justify-between"><div><p class="text-xs uppercase muted">Hadir</p><p id="stat-hadir" class="text-2xl font-bold">0</p></div><span class="text-2xl">✅</span></div>
+    <div class="elev-card p-4 flex items-center justify-between"><div><p class="text-xs uppercase muted">Izin</p><p id="stat-izin" class="text-2xl font-bold">0</p></div><span class="text-2xl">📝</span></div>
+    <div class="elev-card p-4 flex items-center justify-between"><div><p class="text-xs uppercase muted">Sakit</p><p id="stat-sakit" class="text-2xl font-bold">0</p></div><span class="text-2xl">🤒</span></div>
+    <div class="elev-card p-4 flex items-center justify-between"><div><p class="text-xs uppercase muted">Dinas Luar</p><p id="stat-dl" class="text-2xl font-bold">0</p></div><span class="text-2xl">🚗</span></div>
   </section>
 
   <!-- KEHADIRAN -->
   <main class="p-6 max-w-5xl mx-auto space-y-6">
     <section class="elev-card p-5">
       <h2 class="text-xl font-semibold mb-4" style="color:var(--primary-900)">Form Kehadiran Guru</h2>
+
       <form id="attendance-form" class="grid md:grid-cols-2 gap-3">
+        <!-- PENCARIAN + DROPDOWN GURU -->
         <div>
           <label class="font-semibold">Nama Guru</label>
+          <input id="search-guru" type="text" placeholder="Cari nama guru..." class="w-full border p-2 rounded focus-ring mb-2">
           <select id="nama-guru-kehadiran" class="w-full border p-2 rounded focus-ring" required>
             <option value="">-- Pilih Guru --</option>
           </select>
           <div id="warn-sudah-absen" class="text-sm mt-1"></div>
         </div>
 
+        <!-- STATUS -->
         <div>
           <label class="font-semibold">Status Kehadiran</label>
           <select id="status-kehadiran" class="w-full border p-2 rounded focus-ring" required>
@@ -80,23 +113,25 @@
             <option value="Sakit">Sakit</option>
             <option value="Dinas Luar">Dinas Luar</option>
           </select>
-          <div id="status-info" class="text-xs mt-1 text-gray-500"></div>
+          <div id="status-info" class="text-xs mt-1 text-gray-500">Pilih salah satu: Hadir / Izin / Sakit / Dinas Luar.</div>
         </div>
 
+        <!-- LOKASI + JARAK -->
         <div class="md:col-span-2">
           <label class="font-semibold">Keterangan Lokasi (otomatis)</label>
           <input id="keterangan-lokasi" type="text" class="w-full border p-2 rounded focus-ring" readonly placeholder="Menentukan lokasi...">
+          <div id="distance-info" class="text-xs mt-1 text-gray-600"></div>
         </div>
 
-        <!-- Foto: pratinjau lokal saja -->
+        <!-- FOTO: pratinjau lokal (tetap) -->
         <div class="md:col-span-2">
           <label class="font-semibold">Foto Kehadiran (opsional)</label>
           <input id="foto-kehadiran" type="file" accept="image/*" capture="environment" class="w-full border p-2 rounded focus-ring">
-          <div id="foto-preview-wrap" class="preview-wrap hidden">
-            <img id="preview-foto" alt="Pratinjau foto kehadiran" class="preview-img">
+          <div id="foto-preview-wrap" class="flex items-center gap-3 mt-2 hidden">
+            <img id="preview-foto" alt="Pratinjau foto kehadiran" class="w-44 max-h-56 object-cover rounded shadow">
             <button type="button" id="hapus-foto" class="px-3 py-2 rounded-md bg-gray-200 hover:bg-gray-300 focus-ring">Hapus Foto</button>
           </div>
-          <p class="text-xs opacity-70 mt-1">Foto hanya untuk pratinjau lokal dan tidak dikirim ke server.</p>
+          <p class="text-xs muted mt-1">Foto hanya untuk pratinjau lokal dan tidak dikirim ke server.</p>
         </div>
 
         <div class="md:col-span-2 text-center">
@@ -105,6 +140,7 @@
       </form>
     </section>
 
+    <!-- GRAFIK -->
     <section class="elev-card p-5">
       <h3 class="text-lg font-semibold mb-3" style="color:var(--primary-900)">Komposisi Kehadiran Hari Ini</h3>
       <div class="relative" style="height:220px;">
@@ -112,6 +148,7 @@
       </div>
     </section>
 
+    <!-- TABEL HARI INI -->
     <section class="elev-card p-5">
       <h3 class="text-lg font-semibold mb-3" style="color:var(--primary-900)">Daftar Kehadiran Hari Ini</h3>
       <div class="overflow-auto">
@@ -131,14 +168,9 @@
     </section>
   </main>
 
-  <!-- Toast -->
-  <div id="toast" class="fixed bottom-4 right-4 z-50 hide" aria-live="polite" aria-atomic="true" style="opacity:0;">
-    <div class="bg-blue-600 text-white px-4 py-3 rounded-lg shadow-lg">✅ Data kehadiran tersimpan</div>
-  </div>
-
   <script src="app.js"></script>
 
-  <!-- Inisialisasi ringan + pratinjau foto + dark mode -->
+  <!-- Inisialisasi UI ringan -->
   <script>
     (function(){
       const now = new Date();
@@ -150,6 +182,7 @@
       document.getElementById('greet').textContent = `${sapaan}, Guru!`;
     })();
 
+    // Dark mode
     (function initTheme(){
       try{
         const saved = localStorage.getItem('theme');
@@ -163,6 +196,20 @@
       const isDark = document.documentElement.classList.toggle('dark');
       try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch(e){}
       const icon = document.getElementById('theme-icon'); if(icon) icon.textContent = isDark ? '☀️' : '🌙';
+    });
+
+    // Mode Hemat toggle
+    (function initEco(){
+      try{
+        const eco = localStorage.getItem('ecoMode') === '1';
+        document.body.classList.toggle('eco', eco);
+        const cb = document.getElementById('eco-toggle'); if(cb) cb.checked = eco;
+      }catch(e){}
+    })();
+    document.getElementById('eco-toggle')?.addEventListener('change', (e) => {
+      const on = !!e.target.checked;
+      document.body.classList.toggle('eco', on);
+      try{ localStorage.setItem('ecoMode', on ? '1' : '0'); }catch(e){}
     });
 
     // Foto: pratinjau lokal
@@ -179,7 +226,7 @@
     });
     btnHapus?.addEventListener('click', () => { inputFoto.value=''; imgPreview.src=''; wrapPreview.classList.add('hidden'); });
 
-    // Jam analog (backup)
+    // Jam analog
     window.addEventListener('load', () => { if (typeof drawAnalogClock === 'function') drawAnalogClock(); });
   </script>
 </body>
