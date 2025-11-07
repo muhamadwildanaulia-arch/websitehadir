@@ -7,13 +7,13 @@
 
   <!-- Tailwind CDN -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <!-- Chart.js (sudah ada di proyek, tetap dipakai) -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Confetti untuk efek submit -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
 
   <style>
-    /* ====== Warna dasar + dark mode sederhana tanpa build Tailwind ====== */
+    /* ====== Warna dasar + dark mode sederhana ====== */
     :root {
       --bg: #f4f6f9;
       --text: #1f2937;       /* gray-800 */
@@ -38,7 +38,7 @@
     }
     body { background-color: var(--bg); color: var(--text); }
 
-    /* Header gradien biar hidup */
+    /* Header gradien */
     header.header-gradient {
       background: linear-gradient(90deg, var(--primary-900), var(--primary-800));
     }
@@ -47,14 +47,14 @@
     .tab-active { background-color: var(--primary-900); color: #fff; }
     .tab-btn:hover { background-color: #2563eb; color: white; }
 
-    /* Card elevasi dengan dukungan dark mode */
+    /* Card */
     .elev-card {
       background-color: var(--card);
       border-radius: 0.75rem; /* rounded-xl */
       box-shadow: 0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -2px rgba(0,0,0,.05);
     }
 
-    /* Zebra & sticky header table */
+    /* Tabel */
     tbody tr:nth-child(odd){ background-color: var(--zebra); }
     thead th { position: sticky; top: 0; z-index: 1; background-color: var(--card-soft); }
 
@@ -65,6 +65,19 @@
     #toast { transition: opacity .2s ease, transform .2s ease; }
     #toast.show { opacity: 1; transform: translateY(0); }
     #toast.hide { opacity: 0; transform: translateY(8px); }
+
+    /* Avatar Inisial */
+    .avatar {
+      width: 2rem; height: 2rem;
+      border-radius: 9999px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: .875rem; /* text-sm */
+      color: white;
+      flex-shrink: 0;
+    }
+    .name-cell {
+      display: inline-flex; align-items: center; gap: .5rem; /* space-x-2 */
+    }
   </style>
 </head>
 <body class="font-sans">
@@ -101,7 +114,7 @@
     <button id="tab-laporan" class="tab-btn px-6 py-3 focus-ring" onclick="switchTab('laporan')">📊 Laporan</button>
   </nav>
 
-  <!-- STAT KILAT (baru) -->
+  <!-- STAT KILAT -->
   <section class="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
     <div class="elev-card p-4 flex items-center justify-between">
       <div>
@@ -162,10 +175,10 @@
       </div>
     </form>
 
-    <!-- GRAFIK KEHADIRAN HARIAN -->
+    <!-- GRAFIK DOUGHNUT KEHADIRAN HARI INI -->
     <div class="elev-card mt-8 p-5">
-      <h3 class="text-lg font-semibold mb-3" style="color: var(--primary-900)">Grafik Kehadiran Hari Ini</h3>
-      <canvas id="dailyChart" height="100"></canvas>
+      <h3 class="text-lg font-semibold mb-3" style="color: var(--primary-900)">Komposisi Kehadiran Hari Ini</h3>
+      <canvas id="dailyChart" height="140" aria-label="Grafik komposisi kehadiran"></canvas>
     </div>
 
     <!-- TABEL KEHADIRAN -->
@@ -255,7 +268,7 @@
   <!-- App logic utama milikmu -->
   <script src="app.js"></script>
 
-  <!-- Peningkatan UX non-invasif (aman tanpa ubah app.js) -->
+  <!-- Peningkatan UX & Grafik Doughnut (non-invasif) -->
   <script>
     // ====== Tanggal & Sapaan Dinamis ======
     (function(){
@@ -269,7 +282,7 @@
       if (greetEl) greetEl.textContent = `${sapaan}, Guru!`;
     })();
 
-    // ====== Dark Mode dengan penyimpanan preferensi ======
+    // ====== Dark Mode ======
     (function initTheme(){
       try {
         const saved = localStorage.getItem('theme');
@@ -299,42 +312,136 @@
       }, 2000);
     }
     function shootConfetti(){
-      try {
-        confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
-      } catch(e){}
+      try { confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } }); } catch(e){}
     }
-
-    // Listener aman: tetap memunculkan toast & confetti meskipun app.js mencegat submit.
     document.getElementById('attendance-form')?.addEventListener('submit', () => {
-      // Tunda sedikit agar tidak mengganggu logika penyimpanan app.js
       setTimeout(() => { shootConfetti(); showToast(); }, 50);
     });
 
-    // ====== Quick Stats (Hadir/Izin/Sakit/DL) ======
-    function updateQuickStatsFromRows(){
-      const rows = Array.from(document.querySelectorAll('#attendance-list tr'));
-      const statusIdx = 1; // Kolom ke-2 adalah status
-      const count = { 'Hadir':0, 'Izin':0, 'Sakit':0, 'Dinas Luar':0 };
-      rows.forEach(tr => {
-        const tds = tr.querySelectorAll('td');
-        if (tds && tds.length > statusIdx) {
-          const s = tds[statusIdx].textContent.trim();
-          if (count.hasOwnProperty(s)) count[s]++;
-        }
+    // ====== Util: Avatar Inisial ======
+    const AVATAR_COLORS = [
+      '#1D4ED8','#0EA5E9','#10B981','#F59E0B','#EF4444',
+      '#8B5CF6','#EC4899','#14B8A6','#22C55E','#E11D48'
+    ];
+    function hashCode(str){
+      let h = 0; for (let i=0;i<str.length;i++){ h = ((h<<5)-h) + str.charCodeAt(i); h |= 0; }
+      return Math.abs(h);
+    }
+    function nameToInitials(name){
+      if (!name) return '?';
+      const parts = name.trim().split(/\s+/);
+      const first = parts[0]?.[0] || '';
+      const second = parts[1]?.[0] || '';
+      return (first + second).toUpperCase();
+    }
+    function colorForName(name){
+      const idx = hashCode(name) % AVATAR_COLORS.length;
+      return AVATAR_COLORS[idx];
+    }
+    function avatarizeNameCell(td){
+      if (!td || td.dataset.avatarized === '1') return;
+      const name = td.textContent.trim();
+      td.innerHTML = '';
+      const wrap = document.createElement('span');
+      wrap.className = 'name-cell';
+      const av = document.createElement('span');
+      av.className = 'avatar';
+      av.style.backgroundColor = colorForName(name);
+      av.textContent = nameToInitials(name);
+      const text = document.createElement('span');
+      text.textContent = name;
+      wrap.appendChild(av); wrap.appendChild(text);
+      td.appendChild(wrap);
+      td.dataset.avatarized = '1';
+    }
+    function processTableAvatars(tbodySelector){
+      const tbody = document.querySelector(tbodySelector);
+      if (!tbody) return;
+      Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+        const firstTd = tr.querySelector('td');
+        if (firstTd) avatarizeNameCell(firstTd);
       });
-      document.getElementById('stat-hadir').textContent = count['Hadir'];
-      document.getElementById('stat-izin').textContent  = count['Izin'];
-      document.getElementById('stat-sakit').textContent = count['Sakit'];
-      document.getElementById('stat-dl').textContent    = count['Dinas Luar'];
     }
 
-    // Observer: begitu app.js merender tabel kehadiran, stat otomatis ikut update
+    // ====== Quick Stats & Doughnut dari tabel ======
+    function getCountsFromAttendanceTable(){
+      const rows = Array.from(document.querySelectorAll('#attendance-list tr'));
+      const statusIdx = 1; // kolom 2 = Status
+      const counts = { 'Hadir':0, 'Izin':0, 'Sakit':0, 'Dinas Luar':0 };
+      rows.forEach(tr => {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length > statusIdx){
+          const s = tds[statusIdx].textContent.trim();
+          if (counts.hasOwnProperty(s)) counts[s]++;
+        }
+      });
+      return counts;
+    }
+    function updateQuickStatsFromCounts(counts){
+      document.getElementById('stat-hadir').textContent = counts['Hadir'] || 0;
+      document.getElementById('stat-izin').textContent  = counts['Izin'] || 0;
+      document.getElementById('stat-sakit').textContent = counts['Sakit'] || 0;
+      document.getElementById('stat-dl').textContent    = counts['Dinas Luar'] || 0;
+    }
+
+    // Inisialisasi Chart Doughnut
+    const doughnutCtx = document.getElementById('dailyChart')?.getContext('2d');
+    const doughnutChart = doughnutCtx ? new Chart(doughnutCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Hadir','Izin','Sakit','Dinas Luar'],
+        datasets: [{
+          data: [0,0,0,0],
+          borderWidth: 0
+          // Tidak set warna khusus agar mengikuti default Chart.js (aman sesuai aturan)
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '60%',
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: { callbacks: {
+            label: function(ctx){
+              const total = ctx.dataset.data.reduce((a,b)=>a+b,0) || 1;
+              const val = ctx.raw || 0;
+              const pct = Math.round((val/total)*100);
+              return ` ${ctx.label}: ${val} (${pct}%)`;
+            }
+          }}
+        }
+      }
+    }) : null;
+
+    function updateDoughnutFromTable(){
+      if (!doughnutChart) return;
+      const c = getCountsFromAttendanceTable();
+      doughnutChart.data.datasets[0].data = [c['Hadir'], c['Izin'], c['Sakit'], c['Dinas Luar']];
+      doughnutChart.update();
+      updateQuickStatsFromCounts(c);
+    }
+
+    // ====== Observers ======
+    // Attendance list: perubahannya memicu avatar + stats + chart
     const attendanceList = document.getElementById('attendance-list');
-    if (attendanceList) {
-      const obs = new MutationObserver(() => updateQuickStatsFromRows());
-      obs.observe(attendanceList, { childList: true, subtree: false });
-      // Inisialisasi bila sudah ada data saat load
-      updateQuickStatsFromRows();
+    if (attendanceList){
+      const obs1 = new MutationObserver(() => {
+        processTableAvatars('#attendance-list');
+        updateDoughnutFromTable();
+      });
+      obs1.observe(attendanceList, { childList: true, subtree: true });
+      // Inisialisasi saat load
+      processTableAvatars('#attendance-list');
+      updateDoughnutFromTable();
+    }
+
+    // Guru list: hanya avatar pada kolom Nama
+    const guruList = document.getElementById('guru-list');
+    if (guruList){
+      const obs2 = new MutationObserver(() => processTableAvatars('#guru-list'));
+      obs2.observe(guruList, { childList: true, subtree: true });
+      processTableAvatars('#guru-list');
     }
 
     // ====== Aksesibilitas kecil ======
@@ -344,3 +451,4 @@
   </script>
 </body>
 </html>
+```0
