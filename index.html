@@ -474,6 +474,26 @@ function generateMonthlyReport() {
   link.click();
 }
 
+  // Ambil teks bulan
+  const bulan = document.getElementById("bulan-laporan").value || "laporan";
+
+  // Konversi tabel ke CSV
+  let csv = "";
+  const rows = table.querySelectorAll("tr");
+  rows.forEach(row => {
+    const cols = row.querySelectorAll("th, td");
+    const rowData = Array.from(cols).map(td => `"${td.innerText}"`);
+    csv += rowData.join(",") + "\n";
+  });
+
+  // Buat file CSV dan unduh
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `Laporan_Kehadiran_${bulan}.csv`;
+  link.click();
+}
+
 
 /* === GPS & NAMA LOKASI === */
 function getLocation() {
@@ -644,6 +664,7 @@ window.onload = async () => {
 
 </body>
 </html>
+
 
 
 
