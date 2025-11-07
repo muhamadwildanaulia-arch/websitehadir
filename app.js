@@ -1,15 +1,12 @@
-// app.js — anti-absen ganda final (no-cache + guards)
+// app.js - mobile-friendly + anti-duplikasi harian berlapis (tanpa ubah Apps Script)
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw1Hvqf8_pY8AoeI-MOzLHYQEX0hrlY9S7C07Wvmzzey_u4w5cAZpTVbAm1opzBTeMJ/exec";
 
 let teachers = [];
 let attendanceRecords = [];
 let dailyChart = null;
 let lastCounts = null;
-let _submitMutex = false; // kunci klik ganda
 
-/* ===================== UTIL ===================== */
-const debounce = (fn, ms=150) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; };
-
+/* ===================== HELPERS ===================== */
 function normalizeDate(value) {
   if (!value) return "";
   if (typeof value === "string" && value.includes("T")) {
@@ -22,30 +19,22 @@ function normalizeDate(value) {
   if (!isNaN(d)) return d.toISOString().split("T")[0];
   return String(value).trim();
 }
-function normalizeName(name=""){
-  return (name||"").toLowerCase().replace(/\s+/g," ").trim();
-}
 function escapeHtml(str = "") {
-  return String(str)
-    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  return str.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 }
-function todayISO(){ return new Date().toISOString().split("T")[0]; }
-function isTabActive(tab){ const el=document.getElementById(`content-${tab}`); return el ? !el.classList.contains('hidden') : true; }
+const debounce = (fn, ms=150) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; };
+// Anggap aktif bila tidak ada sistem tab (index minimal)
+function isTabActive(tab){ const el = document.getElementById(`content-${tab}`); return el ? !el.classList.contains('hidden') : true; }
 
-// Fetch JSON dengan anti-cache kuat
-async function fetchJsonNoCache(url){
-  const sep = url.includes("?") ? "&" : "?";
-  const full = `${url}${sep}_ts=${Date.now()}`;
-  const res = await fetch(full, {
-    method: "GET",
-    cache: "no-store",
-    headers: { "cache-control":"no-cache", "pragma":"no-cache" }
-  });
-  return res.json();
+// Normalisasi nama untuk pencocokan kuat
+function normalizeName(name=""){
+  return name
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/^\s+|\s+$/g, "");
 }
 
-/* ===== Avatar Inisial ===== */
+/* ===== Avatar Inisial Utils ===== */
 const AVATAR_COLORS = ["#1D4ED8","#0EA5E9","#10B981","#F59E0B","#EF4444","#8B5CF6","#EC4899","#14B8A6","#22C55E","#E11D48"];
 function hashCode(str){ let h=0; for(let i=0;i<str.length;i++){ h=((h<<5)-h)+str.charCodeAt(i); h|=0; } return Math.abs(h); }
 function nameToInitials(name=""){ const p=name.trim().split(/\s+/); return ((p[0]?.[0]||"")+(p[1]?.[0]||"")).toUpperCase()||"?"; }
@@ -55,7 +44,7 @@ function renderNameWithAvatar(name=""){
   return `<span class="name-cell"><span class="avatar" style="background-color:${color}">${init}</span><span>${safe}</span></span>`;
 }
 
-/* ===================== CLOCK ===================== */
+/* ===================== ANALOG CLOCK ===================== */
 function drawAnalogClock() {
   const canvas = document.getElementById("analogClock");
   if (!canvas) return;
@@ -81,7 +70,8 @@ function drawAnalogClock() {
 /* ===================== LOAD / SAVE ===================== */
 async function loadTeachers() {
   try {
-    const data = await fetchJsonNoCache(GOOGLE_SCRIPT_URL + "?sheet=guru");
+    const res = await fetch(GOOGLE_SCRIPT_URL + "?sheet=guru");
+    const data = await res.json();
     teachers = data.slice(1).map(r => ({ nama_guru: r[0], nip: r[1], jabatan: r[2], status: r[3] }));
     if (document.getElementById('guru-list')) updateTeacherList();
     if (document.getElementById('nama-guru-kehadiran')) updateTeacherDropdown();
@@ -91,7 +81,8 @@ async function loadTeachers() {
 
 async function loadAttendance() {
   try {
-    const data = await fetchJsonNoCache(GOOGLE_SCRIPT_URL + "?sheet=kehadiran");
+    const res = await fetch(GOOGLE_SCRIPT_URL + "?sheet=kehadiran");
+    const data = await res.json();
     attendanceRecords = data.slice(1).map(r => ({
       nama_guru: r[0],
       status: r[1],
@@ -112,7 +103,7 @@ async function saveAttendance(d) {
   } catch (e) { console.error("saveAttendance:", e); }
 }
 
-/* ===================== UI ===================== */
+/* ===================== UI UPDATES ===================== */
 function updateTeacherList() {
   const tbody = document.getElementById('guru-list');
   if (!tbody) return;
@@ -140,7 +131,7 @@ function updateTeacherDropdown() {
     opt.value = t.nama_guru;
     select.appendChild(opt);
   });
-  attachAlreadyCheckedWarning(select);
+  attachAlreadyCheckedWarning(select); // pasang peringatan
 }
 
 function isToday(dateStr) {
@@ -170,20 +161,35 @@ function updateAttendanceToday() {
   updateDuplicateNotice();
 }
 
-/* ===================== ANTI-DUPLIKASI ===================== */
+/* ===================== ANTI-DUPLIKASI ABSEN (berlapis) ===================== */
+function todayISO(){
+  return new Date().toISOString().split("T")[0];
+}
+function localKeyFor(name){
+  return `absen:${todayISO()}:${normalizeName(name)}`;
+}
+
+// Cek record di memori (dari Sheet) — normalisasi nama
 function hasSubmittedTodayServerSide(name){
   if (!name) return false;
-  const who = normalizeName(name), t = todayISO();
-  return attendanceRecords.some(r => normalizeDate(r.tanggal) === t && normalizeName(r.nama_guru) === who);
+  const target = normalizeName(name);
+  const tISO = todayISO();
+  return attendanceRecords.some(r => normalizeDate(r.tanggal) === tISO && normalizeName(r.nama_guru) === target);
 }
+
+// Guard lokal (browser) agar langsung nolak walau server belum sinkron
 function hasSubmittedTodayLocal(name){
   if (!name) return false;
-  return localStorage.getItem(`absen:${todayISO()}:${normalizeName(name)}`) === '1';
+  return localStorage.getItem(localKeyFor(name)) === '1';
 }
+
+// Tandai lokal setelah simpan sukses
 function markSubmittedLocal(name){
   if (!name) return;
-  localStorage.setItem(`absen:${todayISO()}:${normalizeName(name)}`, '1');
+  localStorage.setItem(localKeyFor(name), '1');
 }
+
+// Label peringatan + disable tombol jika sudah absen
 function attachAlreadyCheckedWarning(selectEl){
   if (!selectEl) return;
   let warn = document.getElementById('warn-sudah-absen');
@@ -194,6 +200,7 @@ function attachAlreadyCheckedWarning(selectEl){
     selectEl.parentElement.appendChild(warn);
   }
   const btn = document.querySelector('#attendance-form button[type="submit"]');
+
   const update = () => {
     const nama = selectEl.value;
     const already = hasSubmittedTodayLocal(nama) || hasSubmittedTodayServerSide(nama);
@@ -208,17 +215,20 @@ function attachAlreadyCheckedWarning(selectEl){
   selectEl.addEventListener('change', update);
   update();
 }
+
+// Panggil setiap selesai render daftar hari ini
 function updateDuplicateNotice(){
   const selectEl = document.getElementById('nama-guru-kehadiran');
   if (selectEl) attachAlreadyCheckedWarning(selectEl);
 }
 
-/* ===================== CHART (doughnut ringan) ===================== */
+/* ===================== CHART (DOUGHNUT, SUPER RINGAN) ===================== */
 function getTodayCounts(){
   const tISO = todayISO();
   const todayData = attendanceRecords.filter(r => normalizeDate(r.tanggal) === tISO);
-  const counts = { Hadir:0, Izin:0, Sakit:0, "Dinas Luar":0 };
+  const counts = { Hadir: 0, Izin: 0, Sakit: 0, "Dinas Luar": 0 };
   todayData.forEach(r => { if (counts.hasOwnProperty(r.status)) counts[r.status]++; });
+  // quick stats di index
   const h = document.getElementById('stat-hadir');
   if (h) {
     document.getElementById('stat-hadir').textContent = counts.Hadir;
@@ -257,8 +267,72 @@ function updateChart() {
 }
 
 /* ===================== REPORT, CSV, GPS ===================== */
-function generateMonthlyReport() { /* tidak diubah dari versi sebelumnya */ }
-function downloadMonthlyReport() { /* tidak diubah dari versi sebelumnya */ }
+function generateMonthlyReport() {
+  const bulanInput = document.getElementById('bulan-laporan'); if (!bulanInput) return;
+  const val = bulanInput.value; if (!val) return;
+  const [tahun, bulan] = val.split('-');
+  const hariDalamBulan = new Date(tahun, bulan, 0).getDate();
+  const guruList = teachers.map(t => t.nama_guru);
+  const dataBulan = attendanceRecords.filter(r => r.tanggal && r.tanggal.startsWith(`${tahun}-${bulan}`));
+
+  let html = `<thead class='bg-gray-100'><tr><th class='border p-1'>Nama Guru</th>`;
+  for (let i = 1; i <= hariDalamBulan; i++) html += `<th class='border p-1'>${i}</th>`;
+  html += `</tr></thead><tbody>`;
+
+  let total = { Hadir:0, Izin:0, Sakit:0, "Dinas Luar":0 };
+
+  guruList.forEach(nama => {
+    html += `<tr><td class='border p-1 font-semibold'>${renderNameWithAvatar(nama)}</td>`;
+    for (let i=1;i<=hariDalamBulan;i++) {
+      const tanggal = `${tahun}-${bulan}-${String(i).padStart(2,'0')}`;
+      const abs = dataBulan.find(r => r.nama_guru===nama && r.tanggal===tanggal);
+      const s = abs ? abs.status[0] : '';
+      if (abs && total.hasOwnProperty(abs.status)) total[abs.status]++;
+      let warna = s==="H" ? "bg-green-100 text-green-700 font-bold" :
+                  s==="I" ? "bg-yellow-100 text-yellow-700 font-bold" :
+                  s==="S" ? "bg-red-100 text-red-700 font-bold" :
+                  s==="D" ? "bg-blue-100 text-blue-700 font-bold" : "";
+      html += `<td class='border text-center text-xs p-1 ${warna}'>${s}</td>`;
+    }
+    html += `</tr>`;
+  });
+
+  html += `</tbody>`;
+  const tabel = document.getElementById('tabel-laporan'); if (tabel) tabel.innerHTML = html;
+
+  const sum = total.Hadir + total.Izin + total.Sakit + total["Dinas Luar"];
+  const resume = document.getElementById('resume-laporan');
+  if (resume) resume.innerHTML = `
+    <h4 class='font-semibold text-blue-900 mb-2'>Resume Kehadiran Bulan ${bulan}-${tahun}</h4>
+    <p>Hadir: <b>${total.Hadir}</b> | Izin: <b>${total.Izin}</b> | Sakit: <b>${total.Sakit}</b> | Dinas Luar: <b>${total["Dinas Luar"]}</b></p>
+    <p>Total Kehadiran: <b>${sum}</b> dari ${guruList.length * hariDalamBulan} data</p>
+    <div class="mt-3 text-sm space-x-2">
+      <span class="bg-green-100 text-green-700 px-2 py-1 rounded">H = Hadir</span>
+      <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded">I = Izin</span>
+      <span class="bg-red-100 text-red-700 px-2 py-1 rounded">S = Sakit</span>
+      <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded">D = Dinas Luar</span>
+    </div>
+  `;
+}
+
+function downloadMonthlyReport() {
+  const table = document.getElementById("tabel-laporan");
+  if (!table || !table.rows.length) { alert("⚠️ Laporan belum tersedia. Silakan pilih bulan terlebih dahulu!"); return; }
+  const bulan = document.getElementById("bulan-laporan").value || "laporan";
+  let csv = "";
+  const rows = table.querySelectorAll("tr");
+  rows.forEach(row => {
+    const cols = row.querySelectorAll("th, td");
+    const rowData = Array.from(cols).map(td => `"${td.innerText.replace(/"/g,'""')}"`);
+    csv += rowData.join(",") + "\n";
+  });
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `Laporan_Kehadiran_${bulan}.csv`;
+  link.click();
+}
+
 function getLocation() {
   const locInput = document.getElementById('keterangan-lokasi');
   if (!locInput) return;
@@ -273,31 +347,28 @@ function getLocation() {
   }, () => { locInput.value = "Gagal mengambil lokasi"; });
 }
 
-/* ===================== EVENTS ===================== */
+/* ===================== EVENT LISTENERS ===================== */
 document.addEventListener('submit', async (e) => {
   if (!e.target) return;
 
+  // ATTENDANCE FORM
   if (e.target.id === 'attendance-form') {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
     const namaGuru = document.getElementById('nama-guru-kehadiran').value;
 
-    // mutex klik ganda
-    if (_submitMutex) return;
-    _submitMutex = true;
-
-    // Lapis 1: cek lokal
+    // Lapis 1: blokir lokal
     if (hasSubmittedTodayLocal(namaGuru)) {
-      alert('⚠️ Guru ini sudah absen hari ini (lokal).');
-      _submitMutex = false; return;
+      alert('⚠️ Kehadiran untuk guru ini sudah tercatat hari ini (lokal).');
+      return;
     }
 
-    // Lapis 2: muat data terbaru (no-cache) lalu cek
+    // Lapis 2: muat data terbaru dari server lalu cek lagi
     await loadAttendance();
     if (hasSubmittedTodayServerSide(namaGuru)) {
-      alert('⚠️ Guru ini sudah absen hari ini.');
+      alert('⚠️ Kehadiran untuk guru ini sudah tercatat hari ini.');
       updateDuplicateNotice();
-      _submitMutex = false; return;
+      return;
     }
 
     const now = new Date();
@@ -305,11 +376,11 @@ document.addEventListener('submit', async (e) => {
       nama_guru: namaGuru,
       status: document.getElementById('status-kehadiran').value,
       jam_hadir: now.toLocaleTimeString('id-ID'),
-      tanggal: todayISO(),
+      tanggal: now.toISOString().split('T')[0],
       keterangan_lokasi: document.getElementById('keterangan-lokasi').value || ''
     };
 
-    // overlay + lock tombol
+    // loading + lock tombol
     const loading = document.createElement('div');
     loading.id = 'loading-msg';
     loading.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50';
@@ -319,27 +390,20 @@ document.addEventListener('submit', async (e) => {
 
     await saveAttendance(data);
 
-    // Lapis 3: tandai lokal + tambahkan ke memori agar langsung terblok
+    // Lapis 3: tandai lokal agar langsung tertolak kalau klik lagi
     markSubmittedLocal(namaGuru);
-    attendanceRecords.push({
-      nama_guru: data.nama_guru,
-      status: data.status,
-      jam: data.jam_hadir,
-      tanggal: data.tanggal,
-      lokasi: data.keterangan_lokasi
-    });
 
     setTimeout(async () => {
-      await loadAttendance(); // sinkron server (no-cache)
+      await loadAttendance();
       document.getElementById('loading-msg')?.remove();
       if (btn){ btn.disabled = false; btn.classList.remove('opacity-60','cursor-not-allowed'); }
       updateDuplicateNotice();
-      _submitMutex = false;
     }, 600);
 
     e.target.reset();
   }
 
+  // GURU FORM
   if (e.target.id === 'guru-form') {
     e.preventDefault();
     const d = {
@@ -353,7 +417,7 @@ document.addEventListener('submit', async (e) => {
   }
 });
 
-// editGuru global (untuk dashboard)
+// editGuru global (dipakai dashboard)
 window.editGuru = function(i) {
   const g = teachers[i];
   document.getElementById('nama-guru').value = g.nama_guru;
@@ -363,10 +427,11 @@ window.editGuru = function(i) {
   if (typeof switchTab === 'function') switchTab('guru');
 };
 
-/* ===================== DASHBOARD (ringkas) ===================== */
+/* ===================== DASHBOARD (opsional) ===================== */
 async function loadDashboard() {
   await loadTeachers();
   await loadAttendance();
+
   const totalGuru = document.getElementById('totalGuru');
   const hadirHariIni = document.getElementById('hadirHariIni');
   const tidakHadir = document.getElementById('tidakHadirHariIni');
@@ -402,7 +467,7 @@ async function loadDashboard() {
   }
 }
 
-/* ===================== TAB SWITCH (opsional) ===================== */
+/* ===================== TAB SWITCH (index lama) ===================== */
 window.switchTab = function(tab) {
   document.querySelectorAll('section[id^="content-"]').forEach(el => el.classList.add('hidden'));
   document.querySelectorAll('nav button').forEach(el => el.classList.remove('tab-active'));
@@ -417,9 +482,13 @@ window.switchTab = function(tab) {
 window.addEventListener('load', async () => {
   const cd = document.getElementById('current-date');
   if (cd) cd.textContent = new Date().toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
   drawAnalogClock();
   try { getLocation(); } catch(e){}
+
   await loadTeachers();
   await loadAttendance();
+
+  // refresh periodik
   setInterval(async () => { await loadAttendance(); }, 60000);
 });
