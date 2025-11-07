@@ -1,34 +1,32 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login Admin | Kehadiran SDN Muhara</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login Admin | SDN Muhara</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="bg-blue-50 flex items-center justify-center h-screen font-sans">
-  <div class="bg-white p-8 rounded-2xl shadow-lg w-80 text-center">
-    <h1 class="text-xl font-bold mb-4 text-blue-800">Login Admin</h1>
-    <input id="username" type="text" placeholder="Username" class="border p-2 w-full mb-3 rounded">
-    <input id="password" type="password" placeholder="Password" class="border p-2 w-full mb-3 rounded">
-    <button onclick="login()" class="bg-blue-700 hover:bg-blue-800 text-white w-full py-2 rounded-lg mt-2">Masuk</button>
+<body class="bg-blue-50 flex items-center justify-center min-h-screen font-sans">
+  <div class="bg-white p-8 rounded-2xl shadow-lg w-96 text-center">
+    <h1 class="text-2xl font-bold mb-4 text-blue-800">Login Admin</h1>
+    <input id="username" type="text" placeholder="Username" class="border p-2 w-full mb-3 rounded" />
+    <input id="password" type="password" placeholder="Password" class="border p-2 w-full mb-3 rounded" />
+    <button id="loginBtn" class="bg-blue-700 hover:bg-blue-800 text-white w-full py-2 rounded-lg">Masuk</button>
     <p id="msg" class="text-red-600 mt-3 text-sm"></p>
   </div>
 
   <script>
-    const ADMIN_USER = "admin";   // ubah sesuai keinginanmu
-    const ADMIN_PASS = "198901162023211009";   // ubah juga passwordnya
-
-    function login() {
-      const u = document.getElementById("username").value.trim();
-      const p = document.getElementById("password").value.trim();
-      if (u === ADMIN_USER && p === ADMIN_PASS) {
-        sessionStorage.setItem("isAdmin", "true");
-        window.location.href = "dashboard.html";
+    // login sederhana: username admin, password 20203605
+    document.getElementById('loginBtn').addEventListener('click', () => {
+      const u = document.getElementById('username').value.trim();
+      const p = document.getElementById('password').value.trim();
+      if (u === 'admin' && p === '20203605') {
+        sessionStorage.setItem('isAdmin', 'true');
+        window.location.href = 'dashboard.html';
       } else {
-        document.getElementById("msg").textContent = "❌ Username atau password salah!";
+        document.getElementById('msg').textContent = 'Username atau password salah!';
       }
-    }
+    });
   </script>
 </body>
 </html>
