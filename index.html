@@ -241,12 +241,20 @@ function updateTeacherDropdown() {
   });
 }
 
-function updateAttendanceToday() {
-  const tbody = document.getElementById('attendance-list');
-  const today = new Date().toISOString().split('T')[0];
+function isToday(dateStr) {
+  if (!dateStr) return false;
+  const today = new Date();
+  const d = new Date(dateStr);
+  return (
+    d.getDate() === today.getDate() &&
+    d.getMonth() === today.getMonth() &&
+    d.getFullYear() === today.getFullYear()
+  );
+}
 
-  // Bandingkan setelah diformat string
-  const todayData = attendanceRecords.filter(r => String(r.tanggal).includes(today));
+function updateAttendanceToday() {
+  const tbody = document.getElementById("attendance-list");
+  const todayData = attendanceRecords.filter(r => isToday(r.tanggal));
 
   if (!todayData.length) {
     tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4">Belum ada kehadiran hari ini</td></tr>`;
@@ -260,7 +268,8 @@ function updateAttendanceToday() {
       <td class="border p-2">${r.jam}</td>
       <td class="border p-2">${r.lokasi}</td>
       <td class="border p-2">${r.tanggal}</td>
-    </tr>`).join('');
+    </tr>
+  `).join('');
 }
 
 /* === EDIT GURU === */
@@ -429,6 +438,7 @@ window.onload = async () => {
 
 </body>
 </html>
+
 
 
 
