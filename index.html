@@ -133,6 +133,14 @@
     <div id="resume-laporan" class="bg-blue-50 mt-6 p-5 rounded-lg shadow text-gray-800"></div>
   </section>
 <script>
+// === CEK LOGIN ADMIN ===
+if (!sessionStorage.getItem("isAdmin")) {
+  alert("⚠️ Anda belum login sebagai admin!");
+  window.location.href = "admin.html";
+}
+</script>
+
+<script>
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw1Hvqf8_pY8AoeI-MOzLHYQEX0hrlY9S7C07Wvmzzey_u4w5cAZpTVbAm1opzBTeMJ/exec";
 
 let teachers = [];
@@ -596,6 +604,7 @@ window.onload = async () => {
 
 </body>
 </html>
+
 
 
 
