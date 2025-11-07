@@ -1,188 +1,134 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin SDN Muhara</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-  <style>
-    body { background:#f4f6f9; font-family:'Inter',sans-serif; margin:0; overflow-x:hidden; }
-
-    /* LOGIN PAGE */
-    #loginPage {
-      position:fixed; top:0; left:0;
-      width:100%; height:100vh;
-      background:#1e3a8a;
-      display:flex; flex-direction:column;
-      justify-content:center; align-items:center;
-      color:white; z-index:50;
-    }
-    #loginBox {
-      background:white; color:#1e3a8a;
-      border-radius:12px; padding:40px; width:320px;
-      box-shadow:0 4px 12px rgba(0,0,0,0.2);
-    }
-
-    /* SIDEBAR */
-    .sidebar {
-      width:250px; position:fixed; top:0; left:0; height:100vh;
-      background:#1e3a8a; color:white;
-      overflow-y:auto; z-index:20;
-      transition:transform 0.3s ease;
-    }
-    .sidebar a {
-      display:block; padding:12px 20px;
-      color:white; border-radius:6px; margin:4px 8px;
-    }
-    .sidebar a:hover, .sidebar a.active { background:#2563eb; }
-
-    /* KONTEN */
-    .content {
-      margin-left:250px; padding:20px; transition:all 0.3s ease;
-    }
-
-    /* RESPONSIF HP */
-    @media (max-width:768px){
-      .sidebar { transform:translateX(-100%); }
-      .sidebar.active { transform:translateX(0); }
-      .content { margin-left:0; }
-      #menuToggle { display:block; }
-    }
-
-    #menuToggle {
-      display:none; background:#1e3a8a; color:white;
-      border:none; padding:8px 12px; border-radius:6px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin SDN Muhara</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+        /* Menggunakan kelas Tailwind sebanyak mungkin, CSS kustom dipertahankan untuk layout utama */
+        body { background:#f4f6f9; font-family:'Inter',sans-serif; margin:0; overflow-x:hidden; }
+        #loginPage { position:fixed; top:0; left:0; width:100%; height:100vh; background:#1e3a8a; display:flex; flex-direction:column; justify-content:center; align-items:center; color:white; z-index:50; }
+        #loginBox { background:white; color:#1e3a8a; border-radius:12px; padding:40px; width:320px; box-shadow:0 4px 12px rgba(0,0,0,0.2); }
+        .sidebar { width:250px; position:fixed; top:0; left:0; height:100vh; background:#1e3a8a; color:white; overflow-y:auto; z-index:20; transition:transform 0.3s ease; }
+        .sidebar a { display:block; padding:12px 20px; color:white; border-radius:6px; margin:4px 8px; }
+        .sidebar a:hover, .sidebar a.active { background:#2563eb; }
+        .content { margin-left:250px; padding:20px; transition:all 0.3s ease; }
+        #menuToggle { display:none; background:#1e3a8a; color:white; border:none; padding:8px 12px; border-radius:6px; }
+        @media (max-width:768px){ .sidebar { transform:translateX(-100%); } .sidebar.active { transform:translateX(0); } .content { margin-left:0; } #menuToggle { display:block; } }
+    </style>
 </head>
 <body>
 
-<!-- LOGIN PAGE -->
 <div id="loginPage">
-  <img src="[Ukuran asli] SD Negeri Muhara.png" alt="Logo SDN Muhara" class="h-20 mb-4 bg-white p-1 rounded">
-  <div id="loginBox">
-    <h2 class="text-2xl font-bold text-center mb-4">Login Admin</h2>
-    <input id="username" type="text" placeholder="Username" class="border w-full p-2 rounded mb-3">
-    <input id="password" type="password" placeholder="Password" class="border w-full p-2 rounded mb-4">
-    <button onclick="loginAdmin()" class="w-full bg-blue-800 hover:bg-blue-900 text-white py-2 rounded">Masuk</button>
-    <p id="loginError" class="text-red-600 text-center mt-3 hidden">Username atau password salah</p>
-  </div>
+    <img src="[Ukuran asli] SD Negeri Muhara.png" alt="Logo SDN Muhara" class="h-20 mb-4 bg-white p-1 rounded">
+    <div id="loginBox">
+        <h2 class="text-2xl font-bold text-center mb-4">Login Admin</h2>
+        <input id="username" type="text" placeholder="Username" class="border w-full p-2 rounded mb-3">
+        <input id="password" type="password" placeholder="Password" class="border w-full p-2 rounded mb-4">
+        <button id="loginButton" class="w-full bg-blue-800 hover:bg-blue-900 text-white py-2 rounded">Masuk</button>
+        <p id="loginError" class="text-red-600 text-center mt-3 hidden">Username atau password salah</p>
+    </div>
 </div>
 
-<!-- ADMIN PANEL -->
 <div id="adminPanel" class="hidden">
-  <div id="sidebar" class="sidebar">
-    <img src="[Ukuran asli] SD Negeri Muhara.png" alt="Logo SDN Muhara" class="h-20 mt-4 mb-2 bg-white p-1 rounded mx-auto">
-    <h1 class="text-lg font-semibold mb-6 text-center">Admin SDN Muhara</h1>
-    <a href="#" id="menu-dashboard" class="active" onclick="showPage('dashboard')">🏠 Dashboard</a>
-    <a href="#" id="menu-guru" onclick="showPage('guru')">👩‍🏫 Data Guru</a>
-    <a href="#" id="menu-laporan" onclick="showPage('laporan')">📊 Laporan</a>
-    <a href="#" onclick="logout()" class="mt-auto mb-6 bg-red-600 hover:bg-red-700 w-4/5 text-center rounded mx-auto">Keluar</a>
-  </div>
+    <div id="sidebar" class="sidebar flex flex-col"> <img src="[Ukuran asli] SD Negeri Muhara.png" alt="Logo SDN Muhara" class="h-20 mt-4 mb-2 bg-white p-1 rounded mx-auto">
+        <h1 class="text-lg font-semibold mb-6 text-center">Admin SDN Muhara</h1>
+        <nav class="flex-grow"> <a href="#" id="menu-dashboard" class="active" data-page="dashboard">🏠 Dashboard</a>
+            <a href="#" id="menu-guru" data-page="guru">👩‍🏫 Data Guru</a>
+            <a href="#" id="menu-laporan" data-page="laporan">📊 Laporan</a>
+        </nav>
+        <a href="#" id="logoutButton" class="mb-6 bg-red-600 hover:bg-red-700 w-4/5 text-center py-2 rounded mx-auto">Keluar</a>
+    </div>
 
-  <div class="content">
-    <header class="flex justify-between items-center bg-white p-4 rounded shadow mb-4">
-      <div class="flex items-center gap-2">
-        <button id="menuToggle" onclick="toggleSidebar()">☰</button>
-        <h2 class="text-xl font-bold text-blue-900" id="pageTitle">Dashboard</h2>
-      </div>
-      <div id="clock" class="font-mono text-lg text-gray-700"></div>
-    </header>
+    <div class="content">
+        <header class="flex justify-between items-center bg-white p-4 rounded shadow mb-4">
+            <div class="flex items-center gap-2">
+                <button id="menuToggle" >☰</button>
+                <h2 class="text-xl font-bold text-blue-900" id="pageTitle">Dashboard</h2>
+            </div>
+            <div id="clock" class="font-mono text-lg text-gray-700"></div>
+        </header>
 
-    <!-- DASHBOARD -->
-    <section id="page-dashboard">
-      <div class="grid md:grid-cols-3 gap-4">
-        <div class="bg-white p-4 rounded shadow text-center">
-          <h3 class="text-gray-500">Guru Terdaftar</h3>
-          <p id="totalGuru" class="text-3xl font-bold text-blue-900">0</p>
-        </div>
-        <div class="bg-white p-4 rounded shadow text-center">
-          <h3 class="text-gray-500">Kehadiran Hari Ini</h3>
-          <p id="totalHadir" class="text-3xl font-bold text-green-600">0</p>
-        </div>
-        <div class="bg-white p-4 rounded shadow text-center">
-          <h3 class="text-gray-500">Izin/Sakit/DL</h3>
-          <p id="totalLain" class="text-3xl font-bold text-yellow-500">0</p>
-        </div>
-      </div>
-      <div class="bg-white p-5 rounded shadow mt-6">
-        <h3 class="font-semibold text-blue-900 mb-3">Grafik Kehadiran Harian</h3>
-        <canvas id="chartDashboard" height="100"></canvas>
-      </div>
-    </section>
+        <section id="page-dashboard">
+            <div class="grid md:grid-cols-3 gap-4">
+                <div class="bg-white p-4 rounded shadow text-center">
+                    <h3 class="text-gray-500">Guru Terdaftar</h3>
+                    <p id="totalGuru" class="text-3xl font-bold text-blue-900">0</p>
+                </div>
+                <div class="bg-white p-4 rounded shadow text-center">
+                    <h3 class="text-gray-500">Kehadiran Hari Ini</h3>
+                    <p id="totalHadir" class="text-3xl font-bold text-green-600">0</p>
+                </div>
+                <div class="bg-white p-4 rounded shadow text-center">
+                    <h3 class="text-gray-500">Izin/Sakit/DL</h3>
+                    <p id="totalLain" class="text-3xl font-bold text-yellow-500">0</p>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded shadow mt-6">
+                <h3 class="font-semibold text-blue-900 mb-3">Grafik Kehadiran Harian</h3>
+                <canvas id="chartDashboard" height="100"></canvas>
+            </div>
+        </section>
 
-    <!-- Data Guru & Laporan nanti diisi dari blok 2 dan 3 -->
-  </div>
+        <section id="page-guru" class="hidden">
+            <div class="bg-white p-5 rounded shadow">
+                <h3 class="text-2xl font-semibold mb-4 text-blue-900">Daftar Guru</h3>
+                <button id="tambahGuruBtn" class="bg-green-600 text-white px-4 py-2 rounded mb-4 hover:bg-green-700">➕ Tambah Guru</button>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NIP</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jabatan</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="guruTableBody" class="bg-white divide-y divide-gray-200">
+                            <tr><td colspan="4" class="p-4 text-center text-gray-500">Memuat data guru...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-laporan" class="hidden">
+            <div class="bg-white p-5 rounded shadow">
+                <h3 class="text-2xl font-semibold mb-4 text-blue-900">Laporan Kehadiran</h3>
+                <div class="flex flex-wrap gap-4 mb-4">
+                    <input type="date" id="tglMulai" class="border p-2 rounded">
+                    <input type="date" id="tglAkhir" class="border p-2 rounded">
+                    <select id="filterGuru" class="border p-2 rounded">
+                        <option value="all">Semua Guru</option>
+                        </select>
+                    <button id="tampilkanLaporanBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Tampilkan</button>
+                    <button id="exportLaporanBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">📥 Export Excel</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Masuk</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keluar</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="laporanTableBody" class="bg-white divide-y divide-gray-200">
+                            <tr><td colspan="5" class="p-4 text-center text-gray-500">Pilih rentang tanggal untuk menampilkan laporan.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
 </div>
 
-<script>
-function toggleSidebar(){
-  const sidebar=document.getElementById('sidebar');
-  sidebar.classList.toggle('active');
-}
+<script src="app.js"></script>
 
-/* LOGIN ADMIN */
-async function loginAdmin() {
-  const u=document.getElementById('username').value.trim();
-  const p=document.getElementById('password').value.trim();
-  const loginPage=document.getElementById('loginPage');
-  const adminPanel=document.getElementById('adminPanel');
-
-  if(u==='admin' && p==='198901162023211009'){
-    loginPage.classList.add('hidden');
-    adminPanel.classList.remove('hidden');
-    await initAdmin();
-    showPage('dashboard');
-    window.scrollTo(0,0);
-  } else {
-    document.getElementById('loginError').classList.remove('hidden');
-  }
-}
-
-/* LOGOUT */
-function logout(){
-  document.getElementById('adminPanel').classList.add('hidden');
-  document.getElementById('loginPage').classList.remove('hidden');
-  document.getElementById('username').value='';
-  document.getElementById('password').value='';
-}
-
-/* JAM DIGITAL */
-function updateClock(){
-  const now=new Date();
-  const jam=now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  const el=document.getElementById('clock');
-  if(el) el.textContent=jam;
-}
-setInterval(updateClock,1000);
-
-/* SHOW PAGE */
-function showPage(page){
-  ['dashboard','guru','laporan'].forEach(p=>{
-    const section=document.getElementById('page-'+p);
-    const menu=document.getElementById('menu-'+p);
-    if(section) section.classList.add('hidden');
-    if(menu) menu.classList.remove('active');
-  });
-  const section=document.getElementById('page-'+page);
-  const menu=document.getElementById('menu-'+page);
-  if(section) section.classList.remove('hidden');
-  if(menu) menu.classList.add('active');
-  const title=document.getElementById('pageTitle');
-  if(title){
-    title.textContent = page==='guru'?'Data Guru':(page==='laporan'?'Laporan Kehadiran':'Dashboard');
-  }
-}
-
-/* INISIALISASI */
-async function initAdmin(){
-  updateClock();
-  if(typeof loadGuru==='function') await loadGuru();
-  if(typeof loadKehadiran==='function') await loadKehadiran();
-  showPage('dashboard');
-}
-</script>
 </body>
 </html>
