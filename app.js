@@ -1,233 +1,312 @@
-// app.js - versi rebuild yang kompatibel dengan struktur HTML lama
-// - Pastikan file ini di-include dengan 'defer' atau sebelum </body>.
-// - Tidak mengubah id HTML yang ada: attendanceForm, btnSaveAttendance, attendanceLocation, attendanceStatus.
-
-(function () {
+// app.js - terhubung ke Google Apps Script Web App yang kamu berikan
+(function(){
   'use strict';
 
-  // --- Konstanta id (jangan ubah kecuali kamu ubah HTML) ---
+  // ==== GANTI INI SUDAH SAYA SET DENGAN LINK YANG KAMU KIRIM ====
+  const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw1Hvqf8_pY8AoeI-MOzLHYQEX0hrlY9S7C07Wvmzzey_u4w5cAZpTVbAm1opzBTeMJ/exec';
+  const USE_GAS = true;
+
   const IDS = {
-    form: 'attendanceForm',
+    tabSelector: '.tab',
+    tabPrefix: 'tab-',
+    attendanceForm: 'attendanceForm',
     saveBtn: 'btnSaveAttendance',
     tryLocBtn: 'btnTryLocation',
     locationInput: 'attendanceLocation',
-    statusText: 'attendanceStatus'
+    statusText: 'attendanceStatus',
+    chartCanvas: 'attendanceChart',
+    chartSub: 'chartSub',
+    tzLabel: 'tzLabel',
+    currentTime: 'currentTime'
   };
 
-  // --- util debug sederhana ---
-  function log(...args) { console.log('[WH]', ...args); }
-  function warn(...args) { console.warn('[WH]', ...args); }
-  function error(...args) { console.error('[WH]', ...args); }
+  function log(...a){ console.log('[WH]', ...a); }
+  function warn(...a){ console.warn('[WH]', ...a); }
+  function error(...a){ console.error('[WH]', ...a); }
 
-  // --- state lokal ---
-  const state = {
-    geo: null,            // terakhir posisi dari geolocation API
-    locationPermitted: false
-  };
+  const state = { geo: null, chart: null, attendanceData: [] };
 
-  // --- helper untuk DOM ---
-  function $(id) { return document.getElementById(id); }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else init();
 
-  // --- inisialisasi setelah DOM siap ---
-  function init() {
-    log('init start');
-
-    // jika sudah ready
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', onReady);
-    } else {
-      onReady();
-    }
+  function init(){
+    setupTabs();
+    setupClockAndTZ();
+    setupChart();
+    setupAttendanceHandlers();
+    loadLocalAttendance();
+    if (USE_GAS) fetchAttendanceFromServer();
+    refreshChartFromData();
   }
 
-  function onReady() {
-    log('DOM ready');
-    const saveBtn = $(IDS.saveBtn);
-    const tryLocBtn = $(IDS.tryLocBtn);
-    const locInput = $(IDS.locationInput);
-    const status = $(IDS.statusText);
-
-    if (!saveBtn) {
-      error('Tombol simpan tidak ditemukan (id=', IDS.saveBtn, '). Pastikan struktur HTML tetap sama.');
-      return;
-    }
-
-    // Pastikan tombol enable
-    saveBtn.disabled = false;
-
-    // Pasang handler; hapus dulu untuk menghindari ganda
-    saveBtn.removeEventListener('click', onSaveClick);
-    saveBtn.addEventListener('click', onSaveClick);
-
-    if (tryLocBtn) {
-      tryLocBtn.removeEventListener('click', onTryLocationClick);
-      tryLocBtn.addEventListener('click', onTryLocationClick);
-    }
-
-    // Coba otomatis ambil lokasi (non-blocking)
-    setStatus('Mencoba mendapatkan lokasi otomatis...');
-    tryGetLocation(8000).then(pos => {
-      if (pos) {
-        state.geo = pos;
-        state.locationPermitted = true;
-        const lat = pos.coords.latitude.toFixed(6);
-        const lon = pos.coords.longitude.toFixed(6);
-        if (locInput) locInput.value = `${lat}, ${lon}`;
-        setStatus(`Lokasi terdeteksi: ${lat}, ${lon}`);
-        log('Geolocation success', pos);
-      } else {
-        setStatus('Lokasi otomatis tidak tersedia. Bisa diisi manual atau klik "Coba Dapatkan Lokasi".');
-        log('No geolocation available');
-      }
-    }).catch(err => {
-      warn('tryGetLocation threw', err);
-      setStatus('Gagal mendapatkan lokasi otomatis. Isi manual atau klik "Coba Dapatkan Lokasi".');
-    });
-
-    function setStatus(text) {
-      const s = $(IDS.statusText);
-      if (s) s.textContent = text;
-    }
-  }
-
-  // --- setStatus global helper (dipakai di beberapa tempat) ---
-  function setStatus(text) {
-    const s = $(IDS.statusText);
-    if (s) s.textContent = text;
-  }
-
-  // --- getCurrentPosition wrapped with Promise dan timeout fallback ---
-  function tryGetLocation(timeoutMs = 8000) {
-    return new Promise((resolve, reject) => {
-      if (!('geolocation' in navigator)) {
-        log('Browser tidak mendukung geolocation');
-        resolve(null);
-        return;
-      }
-
-      let finished = false;
-      const options = { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 0 };
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          if (finished) return;
-          finished = true;
-          resolve(position);
-        },
-        (geoErr) => {
-          if (finished) return;
-          finished = true;
-          // jangan reject; resolve null agar alur tetap berjalan
-          warn('geolocation error', geoErr);
-          resolve(null);
-        },
-        options
-      );
-
-      // extra safety timeout
-      setTimeout(() => {
-        if (finished) return;
-        finished = true;
-        warn('getCurrentPosition manual timeout');
-        resolve(null);
-      }, timeoutMs + 2000);
+  /* Tabs */
+  function setupTabs(){
+    const tabs = Array.from(document.querySelectorAll(IDS.tabSelector));
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const name = tab.dataset.tab;
+        if(!name) return;
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelectorAll('[id^="' + IDS.tabPrefix + '"]').forEach(c => c.style.display='none');
+        const active = document.getElementById(IDS.tabPrefix + name);
+        if (active) active.style.display = '';
+      });
     });
   }
 
-  // --- handler tombol "Coba Dapatkan Lokasi" ---
-  function onTryLocationClick(e) {
-    e && e.preventDefault();
-    setStatus('Mencoba meminta lokasi (akan muncul prompt izin di browser)...');
-    tryGetLocation(10000).then(pos => {
-      if (pos) {
-        state.geo = pos;
-        state.locationPermitted = true;
-        const lat = pos.coords.latitude.toFixed(6);
-        const lon = pos.coords.longitude.toFixed(6);
-        const locInput = $(IDS.locationInput);
-        if (locInput) locInput.value = `${lat}, ${lon}`;
-        setStatus(`Lokasi berhasil: ${lat}, ${lon}`);
-        log('Manual geolocation success', pos);
-      } else {
-        setStatus('Gagal mendapatkan lokasi. Pastikan permission diizinkan atau isi kolom lokasi secara manual.');
-      }
-    }).catch(err => {
-      warn('Error when manual get location', err);
-      setStatus('Error saat mencoba lokasi. Lihat console.');
-    });
-  }
-
-  // --- handler tombol Simpan ---
-  function onSaveClick(e) {
-    e && e.preventDefault();
-    const saveBtn = $(IDS.saveBtn);
-    if (saveBtn) saveBtn.disabled = true; // mencegah double click
+  /* Clock & timezone */
+  function setupClockAndTZ(){
+    const tzLabel = document.getElementById(IDS.tzLabel);
+    const currentTime = document.getElementById(IDS.currentTime);
+    const chartSub = document.getElementById(IDS.chartSub);
 
     try {
-      const formEl = $(IDS.form);
-      const payload = {};
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      if (tzLabel) tzLabel.textContent = tz;
+    } catch(e){ if (tzLabel) tzLabel.textContent = 'UTC'; }
 
-      if (formEl) {
-        // ambil semua input/select/textarea di dalam form
-        const inputs = formEl.querySelectorAll('input[name], select[name], textarea[name]');
-        inputs.forEach(inp => {
-          // gunakan value (untuk checkbox/radio bisa dikembangkan bila perlu)
-          payload[inp.name] = inp.value;
-        });
-      } else {
-        // fallback: ambil nama dan lokasi manual
-        const name = document.getElementById('teacherName');
-        const cls = document.getElementById('className');
-        if (name && name.value) payload.teacherName = name.value;
-        if (cls && cls.value) payload.className = cls.value;
-        const loc = document.getElementById(IDS.locationInput);
-        if (loc && loc.value) payload.location = loc.value;
+    function update(){
+      const now = new Date();
+      const fmt = new Intl.DateTimeFormat(undefined, {
+        hour:'2-digit', minute:'2-digit', second:'2-digit',
+        day:'2-digit', month:'short', year:'numeric'
+      });
+      if (currentTime) currentTime.textContent = fmt.format(now);
+      if (chartSub) chartSub.textContent = 'Periode: ' + now.toLocaleDateString();
+    }
+    update();
+    setInterval(update,1000);
+  }
+
+  /* Chart */
+  function setupChart(){
+    const canvas = document.getElementById(IDS.chartCanvas);
+    if (!canvas) return warn('Chart canvas not found');
+    const ctx = canvas.getContext('2d');
+
+    state.chart = new Chart(ctx, {
+      type:'line',
+      data:{
+        labels:['06:00','07:00','08:00','09:00','10:00','11:00'],
+        datasets:[{
+          label:'Kehadiran (orang)',
+          data:[2,4,6,8,5,7],
+          tension:0.35,
+          fill:true,
+          backgroundColor:'rgba(43,118,246,0.12)',
+          borderColor:'rgba(43,118,246,1)',
+          pointRadius:3
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{ legend:{ display:false } },
+        scales:{ y:{ beginAtZero:true, ticks:{ stepSize:1 } } }
       }
+    });
+  }
 
-      // jika ada geolocation dari API, prioritaskan
+  function refreshChartFromData(){
+    if (!state.chart) return;
+    const counts = {};
+    state.attendanceData.forEach(item=>{
+      try {
+        const d = new Date(item.timestamp);
+        const h = d.getHours().toString().padStart(2,'0') + ':00';
+        counts[h] = (counts[h] || 0) + 1;
+      } catch(e){}
+    });
+    const hours = [];
+    for (let h=6; h<=18; h++) hours.push(h.toString().padStart(2,'0') + ':00');
+    const series = hours.map(h=>counts[h]||0);
+    if (state.attendanceData.length>0) {
+      state.chart.data.labels = hours;
+      state.chart.data.datasets[0].data = series;
+    }
+    state.chart.update();
+  }
+
+  /* Attendance + geolocation */
+  function setupAttendanceHandlers(){
+    const saveBtn = document.getElementById(IDS.saveBtn);
+    const tryLocBtn = document.getElementById(IDS.tryLocBtn);
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.addEventListener('click', onSaveClick); }
+    if (tryLocBtn) tryLocBtn.addEventListener('click', onTryLocationClick);
+
+    setStatus('Mencoba mendapatkan lokasi otomatis...');
+    tryGetLocation(7000).then(pos=>{
+      if (pos) {
+        state.geo = pos;
+        const lat = pos.coords.latitude.toFixed(6), lon = pos.coords.longitude.toFixed(6);
+        const locInput = document.getElementById(IDS.locationInput);
+        if (locInput) locInput.value = `${lat}, ${lon}`;
+        setStatus(`Lokasi terdeteksi: ${lat}, ${lon}`);
+      } else {
+        setStatus('Lokasi otomatis tidak tersedia. Isi manual atau tekan "Coba Dapatkan Lokasi".');
+      }
+    }).catch(err=>{
+      warn('Auto location error', err);
+      setStatus('Gagal mendapatkan lokasi otomatis.');
+    });
+  }
+
+  function setStatus(txt){
+    const el = document.getElementById(IDS.statusText);
+    if (el) el.textContent = txt;
+  }
+
+  function tryGetLocation(timeoutMs=8000){
+    return new Promise((resolve)=>{
+      if (!navigator.geolocation) { resolve(null); return; }
+      let finished=false;
+      const opts={enableHighAccuracy:true,timeout:timeoutMs,maximumAge:0};
+      navigator.geolocation.getCurrentPosition(pos=>{ if (finished) return; finished=true; resolve(pos); }, geErr=>{ if (finished) return; finished=true; warn('geo err',geErr); resolve(null); }, opts);
+      setTimeout(()=>{ if (!finished){ finished=true; warn('geo timeout'); resolve(null); } }, timeoutMs+1200);
+    });
+  }
+
+  function onTryLocationClick(e){
+    e&&e.preventDefault();
+    setStatus('Meminta izin lokasi...');
+    tryGetLocation(10000).then(pos=>{
+      if (pos) {
+        state.geo = pos;
+        const lat = pos.coords.latitude.toFixed(6), lon = pos.coords.longitude.toFixed(6);
+        const locInput = document.getElementById(IDS.locationInput);
+        if (locInput) locInput.value = `${lat}, ${lon}`;
+        setStatus(`Lokasi berhasil: ${lat}, ${lon}`);
+      } else {
+        setStatus('Gagal mendapatkan lokasi. Periksa izin browser atau isi manual.');
+      }
+    }).catch(err=>{
+      warn('manual geo err', err);
+      setStatus('Error saat permintaan lokasi.');
+    });
+  }
+
+  /* Save attendance (POST to GAS or fallback local) */
+  async function onSaveClick(e){
+    e&&e.preventDefault();
+    const saveBtn = document.getElementById(IDS.saveBtn);
+    if (saveBtn) saveBtn.disabled = true;
+    try {
+      const form = document.getElementById(IDS.attendanceForm);
+      const payload = {};
+      if (form){
+        const inputs = form.querySelectorAll('input[name], select[name], textarea[name]');
+        inputs.forEach(inp=>payload[inp.name]=inp.value);
+      }
       if (state.geo) {
         payload.latitude = state.geo.coords.latitude;
         payload.longitude = state.geo.coords.longitude;
         payload.accuracy = state.geo.coords.accuracy;
       }
-
       payload.timestamp = new Date().toISOString();
 
-      // Minimal validation: nama wajib
-      if (!payload.teacherName || payload.teacherName.trim() === '') {
+      if (!payload.teacherName || payload.teacherName.trim()===''){
         alert('Nama guru harus diisi.');
         return;
       }
 
-      // Simpan ke server (contoh): ganti URL dengan endpoint nyata
-      // fetch('/api/attendance', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(payload)
-      // }).then(res => { ... })
-
-      // Sementara: simpan fallback di localStorage agar tidak hilang
-      try {
-        const stored = JSON.parse(localStorage.getItem('attendance_backup') || '[]');
-        stored.push(payload);
-        localStorage.setItem('attendance_backup', JSON.stringify(stored));
-        log('Saved attendance to localStorage fallback', payload);
-        setStatus('Kehadiran tersimpan (fallback local). Jika seharusnya ke server, periksa endpoint.');
-        alert('Kehadiran tersimpan.');
-      } catch (ex) {
-        error('Gagal menyimpan fallback:', ex);
-        alert('Gagal menyimpan data. Lihat console untuk detail.');
+      if (USE_GAS){
+        try {
+          const resp = await fetch(WEB_APP_URL, {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify({ action:'save', data: payload })
+          });
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          const j = await resp.json();
+          if (j && j.success){
+            if (j.saved) {
+              state.attendanceData.push(j.saved);
+              saveLocalMirror(state.attendanceData);
+            } else {
+              // if server replies with saved data missing timestamp, add payload as mirror
+              state.attendanceData.push(payload);
+              saveLocalMirror(state.attendanceData);
+            }
+            setStatus('Kehadiran tersimpan ke server.');
+            alert('Kehadiran tersimpan ke server.');
+          } else {
+            warn('GAS returned non-success, falling back', j);
+            saveToLocalFallback(payload);
+            setStatus('Gagal simpan ke server — disimpan lokal.');
+            alert('Gagal simpan ke server. Data disimpan lokal.');
+          }
+        } catch (err){
+          warn('POST to GAS failed', err);
+          saveToLocalFallback(payload);
+          setStatus('Tidak bisa mencapai server — disimpan lokal.');
+          alert('Tidak bisa mencapai server. Data disimpan lokal.');
+        }
+      } else {
+        saveToLocalFallback(payload);
+        setStatus('Data disimpan lokal (server belum dikonfigurasi).');
+        alert('Data disimpan lokal.');
       }
 
-    } catch (ex) {
-      error('Error saat proses simpan', ex);
-      alert('Terjadi error saat menyimpan. Lihat console.');
+    } catch(err){
+      error('onSaveClick error', err);
+      alert('Terjadi error. Lihat console.');
     } finally {
       if (saveBtn) saveBtn.disabled = false;
+      refreshChartFromData();
     }
   }
 
-  // --- start ---
-  init();
+  /* Fetch attendance from GAS (GET) */
+  async function fetchAttendanceFromServer(){
+    try {
+      const resp = await fetch(WEB_APP_URL + '?action=list');
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const j = await resp.json();
+      // Accept either array or wrapper {success:true, data: [...]}
+      if (Array.isArray(j)) {
+        state.attendanceData = j;
+      } else if (j && Array.isArray(j.data)) {
+        state.attendanceData = j.data;
+      } else {
+        warn('Unexpected list response from GAS', j);
+        return;
+      }
+      saveLocalMirror(state.attendanceData);
+      refreshChartFromData();
+      setStatus('Data hadir diambil dari server.');
+    } catch(err){
+      warn('fetchAttendanceFromServer failed', err);
+      setStatus('Gagal ambil data dari server — gunakan data lokal.');
+    }
+  }
+
+  /* Local fallback helpers */
+  function saveToLocalFallback(payload){
+    try {
+      const key = 'attendance_backup';
+      const existing = JSON.parse(localStorage.getItem(key) || '[]');
+      existing.push(payload);
+      localStorage.setItem(key, JSON.stringify(existing));
+      state.attendanceData = existing;
+      saveLocalMirror(existing);
+      log('Saved to local fallback', payload);
+    } catch(e){
+      error('saveToLocalFallback failed', e);
+    }
+  }
+  function loadLocalAttendance(){
+    try {
+      const key = 'attendance_backup';
+      const arr = JSON.parse(localStorage.getItem(key) || '[]');
+      state.attendanceData = arr || [];
+    } catch(e){
+      state.attendanceData = [];
+    }
+  }
+  function saveLocalMirror(arr){
+    try { localStorage.setItem('attendance_mirror', JSON.stringify(arr)); } catch(e){}
+  }
 
 })();
