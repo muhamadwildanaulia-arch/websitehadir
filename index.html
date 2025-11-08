@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Aplikasi Kehadiran Guru SDN Muhara</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { background-color: #f4f6f9; }
     .tab-active { background-color: #1e3a8a; color: #fff; }
@@ -14,22 +13,21 @@
 </head>
 <body class="font-sans text-gray-800">
   <!-- HEADER -->
-<header class="bg-blue-900 text-white p-4 shadow flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0">
-  <div class="flex items-center space-x-3">
-    <img src="SD_Negeri_Muhara.png" alt="Logo SDN Muhara" class="h-16 md:h-20 w-auto rounded-md bg-white p-1">
-    <div>
-      <h1 class="text-xl md:text-2xl font-bold leading-tight">Aplikasi Kehadiran Guru SDN Muhara</h1>
-      <p id="current-date" class="text-sm opacity-90"></p>
+  <header class="bg-blue-900 text-white p-4 shadow flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0">
+    <div class="flex items-center space-x-3">
+      <img src="SD_Negeri_Muhara.png" alt="Logo SDN Muhara" class="h-16 md:h-20 w-auto rounded-md bg-white p-1">
+      <div>
+        <h1 class="text-xl md:text-2xl font-bold leading-tight">Aplikasi Kehadiran Guru SDN Muhara</h1>
+        <p id="current-date" class="text-sm opacity-90"></p>
+      </div>
     </div>
-  </div>
-
-  <div class="flex items-center justify-between md:justify-end space-x-3">
-    <canvas id="analogClock" width="70" height="70" class="bg-white rounded-full shadow-md md:w-[100px] md:h-[100px]"></canvas>
-    <a href="admin.html" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md">
-      <span class="mr-1">👤</span><span>Masuk Admin</span>
-    </a>
-  </div>
-</header>
+    <div class="flex items-center justify-between md:justify-end space-x-3">
+      <canvas id="analogClock" width="70" height="70" class="bg-white rounded-full shadow-md md:w-[100px] md:h-[100px]"></canvas>
+      <a href="admin.html" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md">
+        <span class="mr-1">👤</span><span>Masuk Admin</span>
+      </a>
+    </div>
+  </header>
 
   <!-- NAV TAB -->
   <nav class="flex justify-center bg-blue-800 text-white font-semibold shadow-md">
@@ -93,7 +91,6 @@
   <!-- TAB DATA GURU -->
   <section id="content-guru" class="hidden p-6">
     <h2 class="text-xl font-semibold mb-4 text-blue-900">Manajemen Data Guru</h2>
-
     <form id="guru-form" class="grid md:grid-cols-2 gap-3 bg-white p-5 rounded-lg shadow">
       <input id="nama-guru" type="text" class="border p-2 rounded" placeholder="Nama Guru" required>
       <input id="nip-guru" type="text" class="border p-2 rounded" placeholder="NIP">
