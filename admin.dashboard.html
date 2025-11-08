@@ -1,21 +1,29 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Dashboard Admin SDN Muhara</title>
+
+  <!-- Tailwind (CDN) -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.5/dist/tailwind.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Chart.js dan SheetJS -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
   <style>
-    body { background-color: #f9fafb; font-family: 'Inter', sans-serif; }
-    .sidebar { transition: all 0.3s ease; }
-    .sidebar.collapsed { transform: translateX(-100%); }
-    .overlay { display: none; }
-    .overlay.active { display: block; }
+    /* fallback jika Tailwind gagal: minimal styling agar layout terbaca */
+    body { font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:#f8fafc; }
+    .sidebar { transition: transform .25s ease; }
+    .sidebar.collapsed { transform: translateX(-110%); }
+    #modalGuru { backdrop-filter: blur(2px); }
+    /* force canvas responsive */
+    canvas { max-width:100%; height:auto !important; }
   </style>
 </head>
 <body class="text-gray-800">
+
   <!-- NAVBAR -->
   <header class="fixed top-0 left-0 right-0 z-40 bg-white shadow flex items-center justify-between px-4 py-3">
     <div class="flex items-center gap-3">
@@ -23,29 +31,34 @@
       <img src="[Ukuran asli] SD Negeri Muhara.png" alt="Logo" class="h-12 bg-white p-1 rounded">
       <h1 class="text-xl font-bold text-blue-900">Dashboard Admin SDN Muhara</h1>
     </div>
-    <button id="logoutBtn" class="bg-red-600 text-white px-3 py-1.5 rounded hover:bg-red-700">Keluar</button>
+    <div class="flex items-center gap-3">
+      <div id="lastUpdated" class="text-sm text-gray-500 mr-3"></div>
+      <button id="btnRefresh" title="Refresh data" class="bg-yellow-400 text-black px-3 py-1 rounded">🔄 Refresh</button>
+      <button id="logoutBtn" class="bg-red-600 text-white px-3 py-1.5 rounded hover:bg-red-700">Keluar</button>
+    </div>
   </header>
 
   <!-- SIDEBAR -->
   <aside id="sidebar" class="sidebar fixed top-0 left-0 h-screen w-64 bg-blue-900 text-white flex flex-col pt-20 shadow-lg">
     <nav class="flex-grow">
-      <a href="#" data-page="dashboard" class="block px-6 py-3 hover:bg-blue-700 active">🏠 Dashboard</a>
+      <a href="#" data-page="dashboard" class="block px-6 py-3 hover:bg-blue-700 bg-blue-700">🏠 Dashboard</a>
       <a href="#" data-page="guru" class="block px-6 py-3 hover:bg-blue-700">👩‍🏫 Data Guru</a>
       <a href="#" data-page="laporan" class="block px-6 py-3 hover:bg-blue-700">📊 Laporan Bulanan</a>
     </nav>
-    <footer class="text-center py-4 text-sm border-t border-blue-800 opacity-70">
+    <footer class="text-center py-4 text-sm border-t border-blue-800 opacity-80">
       © 2025 SDN Muhara
     </footer>
   </aside>
 
-  <!-- OVERLAY (untuk sidebar di HP) -->
-  <div id="overlay" class="overlay fixed inset-0 bg-black bg-opacity-50 z-30"></div>
+  <!-- overlay mobile -->
+  <div id="overlay" class="hidden fixed inset-0 bg-black bg-opacity-40 z-30"></div>
 
-  <!-- MAIN CONTENT -->
+  <!-- MAIN -->
   <main class="pt-20 lg:ml-64 px-4 lg:px-8 pb-10">
-    <!-- DASHBOARD -->
+    <!-- Dashboard -->
     <section id="page-dashboard">
-      <h2 class="text-2xl font-bold text-blue-900 mb-6">📊 Ringkasan Kehadiran</h2>
+      <h2 class="text-2xl font-bold text-blue-900 mb-2">📊 Ringkasan Kehadiran</h2>
+
       <div class="grid md:grid-cols-3 gap-6 mb-8">
         <div class="bg-white rounded-xl shadow p-6 text-center">
           <h3 class="text-gray-500">Total Guru</h3>
@@ -63,7 +76,7 @@
 
       <div class="bg-white rounded-xl shadow p-6 mb-8">
         <h3 class="font-semibold text-blue-900 mb-4">Grafik Kehadiran Harian</h3>
-        <canvas id="chartHarian" height="100"></canvas>
+        <canvas id="chartHarian" height="120"></canvas>
       </div>
 
       <div class="bg-white rounded-xl shadow p-6">
@@ -74,11 +87,11 @@
       </div>
     </section>
 
-    <!-- DATA GURU -->
+    <!-- Data Guru -->
     <section id="page-guru" class="hidden">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-2xl font-bold text-blue-900">👩‍🏫 Manajemen Data Guru</h2>
-        <button id="btnTambahGuru" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">+ Tambah Guru</button>
+        <button id="btnTambahGuru" disabled class="bg-green-600 text-white px-4 py-2 rounded-lg opacity-60">+ Tambah Guru</button>
       </div>
 
       <div class="bg-white rounded-xl shadow p-6 overflow-x-auto">
@@ -99,7 +112,7 @@
       </div>
     </section>
 
-    <!-- LAPORAN BULANAN -->
+    <!-- Laporan -->
     <section id="page-laporan" class="hidden">
       <h2 class="text-2xl font-bold text-blue-900 mb-6">📅 Laporan Bulanan</h2>
 
@@ -131,76 +144,172 @@
     </section>
   </main>
 
-  <!-- MODAL TAMBAH/EDIT GURU -->
+  <!-- MODAL (tetap ada tapi non-interaktif untuk read-only) -->
   <div id="modalGuru" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
     <div class="bg-white rounded-xl shadow-lg w-11/12 md:w-1/2 lg:w-1/3 p-6 relative">
       <button id="closeModalGuru" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
-      <h3 id="modalTitle" class="text-xl font-semibold text-blue-900 mb-4">Tambah Guru</h3>
-
-      <form id="formGuru" class="space-y-3">
-        <input type="hidden" id="guruIndex">
-        <div>
-          <label class="block font-semibold text-gray-700">Nama Guru</label>
-          <input id="namaGuru" type="text" required class="border rounded w-full p-2">
-        </div>
-        <div>
-          <label class="block font-semibold text-gray-700">NIP</label>
-          <input id="nipGuru" type="text" class="border rounded w-full p-2">
-        </div>
-        <div>
-          <label class="block font-semibold text-gray-700">Jabatan</label>
-          <input id="jabatanGuru" type="text" class="border rounded w-full p-2">
-        </div>
-        <div>
-          <label class="block font-semibold text-gray-700">Status</label>
-          <select id="statusGuru" class="border rounded w-full p-2">
-            <option value="PNS">PNS</option>
-            <option value="PPPK">PPPK</option>
-            <option value="Honorer">Honorer</option>
-          </select>
-        </div>
-
-        <div class="text-right pt-3">
-          <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded">Simpan</button>
-        </div>
-      </form>
+      <h3 id="modalTitle" class="text-xl font-semibold text-blue-900 mb-4">Info (Read-only)</h3>
+      <p class="text-sm text-gray-600">Halaman admin ini dalam mode hanya-baca (tidak mengubah Google Sheet).</p>
+      <div class="text-right pt-3">
+        <button id="closeModalBtn" class="bg-slate-700 text-white px-4 py-2 rounded">Tutup</button>
+      </div>
     </div>
   </div>
 
+  <!-- Inline JS: read-only admin-dashboard logic -->
   <script>
-    // Basic UI switching for demo preview (tanpa data)
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('overlay');
-    const toggleSidebar = document.getElementById('toggleSidebar');
+  (function(){
+    const GS_URL = 'https://script.google.com/macros/s/AKfycbw1Hvqf8_pY8AoeI-MOzLHYQEX0hrlY9S7C07Wvmzzey_u4w5cAZpTVbAm1opzBTeMJ/exec';
 
-    toggleSidebar.addEventListener('click', () => {
-      sidebar.classList.toggle('collapsed');
-      overlay.classList.toggle('active');
+    let guruList = [];
+    let kehadiranList = [];
+    let chartHarian = null;
+    let lastUpdated = null;
+
+    // UI elements
+    const pages = { dashboard: document.getElementById('page-dashboard'), guru: document.getElementById('page-guru'), laporan: document.getElementById('page-laporan') };
+    document.querySelectorAll('aside a[data-page]').forEach(a => a.addEventListener('click', e => {
+      e.preventDefault();
+      Object.values(pages).forEach(p => p.classList.add('hidden'));
+      pages[a.dataset.page].classList.remove('hidden');
+      document.querySelectorAll('aside a').forEach(x => x.classList.remove('bg-blue-700'));
+      a.classList.add('bg-blue-700');
+      // close sidebar on small screens
+      if (window.innerWidth < 1024) document.getElementById('sidebar').classList.add('collapsed');
+    }));
+
+    // sidebar toggle
+    document.getElementById('toggleSidebar').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('collapsed');
+      document.getElementById('overlay').classList.toggle('hidden');
     });
-    overlay.addEventListener('click', () => {
-      sidebar.classList.add('collapsed');
-      overlay.classList.remove('active');
+    document.getElementById('overlay').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.add('collapsed');
+      document.getElementById('overlay').classList.add('hidden');
     });
 
-    // Navigasi antar halaman
-    document.querySelectorAll('aside a[data-page]').forEach(link => {
-      link.addEventListener('click', e => {
-        e.preventDefault();
-        document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
-        document.querySelectorAll('aside a').forEach(a => a.classList.remove('bg-blue-700'));
-        const page = e.target.dataset.page;
-        document.getElementById('page-' + page).classList.remove('hidden');
-        e.target.classList.add('bg-blue-700');
-        if (window.innerWidth < 1024) sidebar.classList.add('collapsed');
-      });
+    // basic modal close
+    document.getElementById('closeModalBtn').addEventListener('click', () => document.getElementById('modalGuru').classList.add('hidden'));
+    document.getElementById('closeModalGuru').addEventListener('click', () => document.getElementById('modalGuru').classList.add('hidden'));
+    document.getElementById('btnTambahGuru').addEventListener('click', () => document.getElementById('modalGuru').classList.remove('hidden'));
+
+    // refresh & logout
+    document.getElementById('btnRefresh').addEventListener('click', initDashboard);
+    document.getElementById('logoutBtn').addEventListener('click', () => { if (confirm('Keluar dari dashboard?')) window.location.href='admin.html'; });
+
+    async function initDashboard(){
+      try {
+        showLoading('📡 Memuat data dari Google Sheet...');
+        await Promise.all([ loadGuru(), loadKehadiran() ]);
+        hideLoading();
+        renderDashboard();
+        setLastUpdated();
+      } catch (err) {
+        hideLoading();
+        console.error('Init error', err);
+        alert('Gagal memuat data. Lihat konsol untuk detail (Ctrl+Shift+J).');
+      }
+    }
+
+    // Load guru (GET)
+    async function loadGuru(){
+      const res = await fetch(GS_URL + '?sheet=guru');
+      if (!res.ok) throw new Error('Response not ok for guru: ' + res.status);
+      const data = await res.json();
+      guruList = Array.isArray(data) && data.length > 1 ? data.slice(1).map(r => ({ nama: r[0]||'', nip: r[1]||'', jabatan: r[2]||'', status: r[3]||'' })) : [];
+      renderGuruTable();
+      updateStats();
+    }
+
+    // Load kehadiran (GET)
+    async function loadKehadiran(){
+      const res = await fetch(GS_URL + '?sheet=kehadiran');
+      if (!res.ok) throw new Error('Response not ok for kehadiran: ' + res.status);
+      const data = await res.json();
+      kehadiranList = Array.isArray(data) && data.length > 1 ? data.slice(1).map(r => ({ nama: r[0]||'', status: r[1]||'', jam: r[2]||'', tanggal: normalizeDate(r[3]), lokasi: r[4]||'' })) : [];
+      updateStats();
+    }
+
+    function normalizeDate(v){
+      if (!v) return '';
+      if (typeof v === 'string' && v.includes('T')) {
+        const d = new Date(v); d.setHours(d.getUTCHours()+7); return d.toISOString().split('T')[0];
+      }
+      return String(v).slice(0,10);
+    }
+
+    function updateStats(){
+      document.getElementById('stat-total-guru').textContent = guruList.length;
+      const today = new Date().toISOString().split('T')[0];
+      const todayData = kehadiranList.filter(r => r.tanggal === today);
+      const hadir = todayData.filter(r => r.status === 'Hadir').length;
+      const lain = todayData.filter(r => r.status !== 'Hadir').length;
+      document.getElementById('stat-hadir').textContent = hadir;
+      document.getElementById('stat-lain').textContent = lain;
+    }
+
+    function renderChart(){
+      const ctx = document.getElementById('chartHarian').getContext('2d');
+      const today = new Date().toISOString().split('T')[0];
+      const todays = kehadiranList.filter(r => r.tanggal === today);
+      const counts = { Hadir:0, Izin:0, Sakit:0, 'Dinas Luar':0 };
+      todays.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+      if (chartHarian) chartHarian.destroy();
+      chartHarian = new Chart(ctx, { type:'bar', data:{ labels:Object.keys(counts), datasets:[{ label:'Jumlah', data:Object.values(counts), backgroundColor:['#16a34a','#facc15','#f87171','#3b82f6'] }]}, options:{ responsive:true, plugins:{ legend:{ display:false }}, scales:{ y:{ beginAtZero:true } } } });
+    }
+
+    function renderRecentActivity(){
+      const c = document.getElementById('recent-activity');
+      const sorted = [...kehadiranList].sort((a,b) => (b.tanggal + (b.jam||'')).localeCompare(a.tanggal + (a.jam||'')));
+      const latest = sorted.slice(0,10);
+      c.innerHTML = latest.length ? latest.map(r => `<div class="flex justify-between border-b py-1"><span>${escapeHtml(r.nama)} - ${escapeHtml(r.status)}</span><span class="text-gray-500 text-xs">${escapeHtml(r.tanggal)}</span></div>`).join('') : `<p class="text-gray-400">Belum ada data kehadiran.</p>`;
+    }
+
+    function renderDashboard(){
+      updateStats(); renderChart(); renderRecentActivity();
+    }
+
+    function renderGuruTable(){
+      const tbody = document.getElementById('tabelGuru');
+      if (!guruList.length) { tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-gray-500">Belum ada data guru.</td></tr>`; return; }
+      tbody.innerHTML = guruList.map(g => `<tr class="hover:bg-blue-50"><td class="border p-2">${escapeHtml(g.nip)}</td><td class="border p-2">${escapeHtml(g.nama)}</td><td class="border p-2">${escapeHtml(g.jabatan)}</td><td class="border p-2">${escapeHtml(g.status)}</td><td class="border p-2 text-center text-gray-400 italic">Tidak dapat diubah</td></tr>`).join('');
+    }
+
+    // laporan
+    document.getElementById('tampilkanLaporan').addEventListener('click', () => {
+      const bulan = document.getElementById('bulanLaporan').value;
+      if (!bulan) return alert('Pilih bulan terlebih dahulu.');
+      const [y,m] = bulan.split('-');
+      const filtered = kehadiranList.filter(r => r.tanggal.startsWith(`${y}-${m}`));
+      const tbody = document.querySelector('#tabelLaporan tbody');
+      if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">Tidak ada data untuk bulan ini.</td></tr>`; document.getElementById('resumeLaporan').innerHTML=''; return; }
+      tbody.innerHTML = filtered.map(r => `<tr><td class="border p-2">${escapeHtml(r.tanggal)}</td><td class="border p-2">${escapeHtml(r.nama)}</td><td class="border p-2">${escapeHtml(r.status)}</td><td class="border p-2">${escapeHtml(r.jam)}</td><td class="border p-2">${escapeHtml(r.lokasi)}</td></tr>`).join('');
+      const total = { Hadir:0, Izin:0, Sakit:0, 'Dinas Luar':0 }; filtered.forEach(r => { if (total[r.status]!==undefined) total[r.status]++; });
+      document.getElementById('resumeLaporan').innerHTML = `<h4 class="font-semibold text-blue-900 mb-2">Resume Bulan ${m}-${y}</h4><p>Hadir: <b>${total.Hadir}</b> | Izin: <b>${total.Izin}</b> | Sakit: <b>${total.Sakit}</b> | Dinas Luar: <b>${total['Dinas Luar']}</b></p><p>Total Data: <b>${filtered.length}</b></p>`;
     });
 
-    // Modal (demo)
-    const modal = document.getElementById('modalGuru');
-    const openBtn = document.getElementById('btnTambahGuru');
-    const closeBtn = document.getElementById('closeModalGuru');
-    openBtn.addEventListener('click', () => modal.classList.remove('hidden'));
-    closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+    // export
+    document.getElementById('exportLaporan').addEventListener('click', () => {
+      const rows = []; document.querySelectorAll('#tabelLaporan tbody tr').forEach(tr => { const td = tr.querySelectorAll('td'); if (td.length===5) rows.push({ Tanggal:td[0].textContent, Nama:td[1].textContent, Status:td[2].textContent, Jam:td[3].textContent, Lokasi:td[4].textContent }); });
+      if (!rows.length) return alert('Tidak ada data laporan untuk diekspor.');
+      const wb = XLSX.utils.book_new(); const ws = XLSX.utils.json_to_sheet(rows); XLSX.utils.book_append_sheet(wb, ws, 'Laporan'); XLSX.writeFile(wb, `laporan_${new Date().toISOString().split('T')[0]}.xlsx`);
+    });
+
+    // small helpers
+    function escapeHtml(s){ return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+    function showLoading(msg){ if (!document.getElementById('loadingOverlay')){ const el = document.createElement('div'); el.id='loadingOverlay'; el.className='fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50'; el.innerHTML=`<div class="bg-white p-6 rounded-lg shadow-lg text-center"><p class="text-blue-700 font-semibold">${msg}</p></div>`; document.body.appendChild(el);} }
+    function hideLoading(){ const e = document.getElementById('loadingOverlay'); if (e) e.remove(); }
+
+    // last updated
+    function setLastUpdated(){ lastUpdated = new Date(); const el = document.getElementById('lastUpdated'); const waktu = lastUpdated.toLocaleString('id-ID', { timeZone:'Asia/Jakarta', hour12:false }); el.textContent = `⏱️ Diperbarui: ${waktu} WIB`; }
+
+    // init
+    initDashboard();
+
+    // expose for console debugging
+    window.__admin_debug = { guruList, kehadiranList, initDashboard };
+
+  })();
   </script>
 </body>
 </html>
