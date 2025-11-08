@@ -1,146 +1,49 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Aplikasi Kehadiran Guru SDN Muhara</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>WebsiteHadir SDN Muhara</title>
   <style>
-    body { background-color: #f4f6f9; }
-    .tab-active { background-color: #1e3a8a; color: #fff; }
-    .tab-btn:hover { background-color: #2563eb; color: white; }
+    /* Styling minimal agar layout tidak berubah drastis */
+    body { font-family: system-ui, sans-serif; margin: 16px; }
+    .form-row { margin-bottom: 8px; }
+    label { display:block; font-size: 13px; margin-bottom:4px; }
+    input, select, textarea, button { padding:8px; font-size:14px; width:100%; box-sizing:border-box; }
+    button { width:auto; padding:8px 16px; cursor:pointer; }
+    #attendanceStatus { margin-top:6px; font-size:13px; color:#333; }
   </style>
 </head>
-<body class="font-sans text-gray-800">
-  <!-- HEADER -->
-  <header class="bg-blue-900 text-white p-4 shadow flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0">
-    <div class="flex items-center space-x-3">
-      <img src="SD_Negeri_Muhara.png" alt="Logo SDN Muhara" class="h-16 md:h-20 w-auto rounded-md bg-white p-1">
-      <div>
-        <h1 class="text-xl md:text-2xl font-bold leading-tight">Aplikasi Kehadiran Guru SDN Muhara</h1>
-        <p id="current-date" class="text-sm opacity-90"></p>
-      </div>
-    </div>
-    <div class="flex items-center justify-between md:justify-end space-x-3">
-      <canvas id="analogClock" width="70" height="70" class="bg-white rounded-full shadow-md md:w-[100px] md:h-[100px]"></canvas>
-      <a href="admin.html" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md">
-        <span class="mr-1">👤</span><span>Masuk Admin</span>
-      </a>
-    </div>
-  </header>
+<body>
 
-  <!-- NAV TAB -->
-  <nav class="flex justify-center bg-blue-800 text-white font-semibold shadow-md">
-    <button id="tab-kehadiran" class="tab-btn px-6 py-3 tab-active" onclick="switchTab('kehadiran')">Kehadiran</button>
-    <button id="tab-guru" class="tab-btn px-6 py-3" onclick="switchTab('guru')">Data Guru</button>
-    <button id="tab-laporan" class="tab-btn px-6 py-3" onclick="switchTab('laporan')">Laporan Bulanan</button>
-  </nav>
+  <h1>Form Kehadiran Guru</h1>
 
-  <!-- TAB KEHADIRAN -->
-  <section id="content-kehadiran" class="p-6">
-    <h2 class="text-xl font-semibold mb-4 text-blue-900">Form Kehadiran Guru</h2>
-    <form id="attendance-form" class="grid md:grid-cols-2 gap-3 bg-white p-5 rounded-lg shadow">
-      <div>
-        <label class="font-semibold">Nama Guru</label>
-        <select id="nama-guru-kehadiran" class="w-full border p-2 rounded" required>
-          <option value="">-- Pilih Guru --</option>
-        </select>
-      </div>
-      <div>
-        <label class="font-semibold">Status Kehadiran</label>
-        <select id="status-kehadiran" class="w-full border p-2 rounded" required>
-          <option value="Hadir">Hadir</option>
-          <option value="Izin">Izin</option>
-          <option value="Sakit">Sakit</option>
-          <option value="Dinas Luar">Dinas Luar</option>
-        </select>
-      </div>
-      <div class="md:col-span-2">
-        <label class="font-semibold">Keterangan Lokasi (otomatis)</label>
-        <input id="keterangan-lokasi" type="text" class="w-full border p-2 rounded" readonly placeholder="Menentukan lokasi...">
-      </div>
-      <div class="md:col-span-2 text-center">
-        <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-lg mt-2">Simpan Kehadiran</button>
-      </div>
-    </form>
-
-    <!-- GRAFIK KEHADIRAN HARIAN -->
-    <div class="bg-white mt-8 p-5 rounded-lg shadow">
-      <h3 class="text-lg font-semibold text-blue-900 mb-3">Grafik Kehadiran Hari Ini</h3>
-      <canvas id="dailyChart" height="100"></canvas>
+  <!-- Struktur penting: jangan ubah id pada elemen-elemen ini -->
+  <div id="attendanceForm" class="attendance-form">
+    <div class="form-row">
+      <label for="teacherName">Nama Guru</label>
+      <input id="teacherName" name="teacherName" type="text" placeholder="Nama lengkap" />
     </div>
 
-    <!-- TABEL KEHADIRAN -->
-    <div class="bg-white mt-8 p-5 rounded-lg shadow">
-      <h3 class="text-lg font-semibold text-blue-900 mb-3">Daftar Kehadiran Hari Ini</h3>
-      <table class="w-full border-collapse border text-sm">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="border p-2">Nama Guru</th>
-            <th class="border p-2">Status</th>
-            <th class="border p-2">Jam Hadir</th>
-            <th class="border p-2">Lokasi</th>
-            <th class="border p-2">Tanggal</th>
-          </tr>
-        </thead>
-        <tbody id="attendance-list"></tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- TAB DATA GURU -->
-  <section id="content-guru" class="hidden p-6">
-    <h2 class="text-xl font-semibold mb-4 text-blue-900">Manajemen Data Guru</h2>
-    <form id="guru-form" class="grid md:grid-cols-2 gap-3 bg-white p-5 rounded-lg shadow">
-      <input id="nama-guru" type="text" class="border p-2 rounded" placeholder="Nama Guru" required>
-      <input id="nip-guru" type="text" class="border p-2 rounded" placeholder="NIP">
-      <input id="jabatan-guru" type="text" class="border p-2 rounded" placeholder="Jabatan">
-      <select id="status-kepegawaian" class="border p-2 rounded">
-        <option value="PNS">PNS</option>
-        <option value="PPPK">PPPK</option>
-        <option value="Honorer">Honorer</option>
-      </select>
-      <button type="submit" class="bg-green-700 hover:bg-green-800 text-white px-6 py-2 rounded-lg md:col-span-2 mt-2">Tambah / Update Guru</button>
-    </form>
-
-    <div class="bg-white mt-8 p-5 rounded-lg shadow">
-      <h3 class="text-lg font-semibold text-blue-900 mb-3">Daftar Guru</h3>
-      <table class="w-full border-collapse border text-sm">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="border p-2">Nama Guru</th>
-            <th class="border p-2">NIP</th>
-            <th class="border p-2">Jabatan</th>
-            <th class="border p-2">Status</th>
-            <th class="border p-2">Aksi</th>
-          </tr>
-        </thead>
-        <tbody id="guru-list"></tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- TAB LAPORAN BULANAN -->
-  <section id="content-laporan" class="hidden p-6">
-    <h2 class="text-xl font-semibold mb-4 text-blue-900">Laporan Bulanan</h2>
-    <div class="bg-white p-5 rounded-lg shadow">
-      <label class="font-semibold">Pilih Bulan:</label>
-      <input type="month" id="bulan-laporan" class="border p-2 rounded ml-2" onchange="generateMonthlyReport()">
-      <div class="flex justify-end mt-3">
-        <button onclick="downloadMonthlyReport()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
-          📥 Download Laporan (Excel)
-        </button>
-      </div>
+    <div class="form-row">
+      <label for="className">Kelas</label>
+      <input id="className" name="className" type="text" placeholder="Contoh: 1A" />
     </div>
 
-    <div class="bg-white mt-5 p-5 rounded-lg shadow overflow-auto">
-      <h3 class="text-lg font-semibold text-blue-900 mb-3">Rekap Kehadiran Bulan Ini</h3>
-      <table id="tabel-laporan" class="w-full border-collapse border text-sm min-w-max"></table>
+    <div class="form-row">
+      <label for="attendanceLocation">Lokasi (akan terisi otomatis bila diizinkan)</label>
+      <input id="attendanceLocation" name="location" type="text" placeholder="Latitude,Longitude atau alamat" />
     </div>
 
-    <div id="resume-laporan" class="bg-blue-50 mt-6 p-5 rounded-lg shadow text-gray-800"></div>
-  </section>
+    <div id="attendanceStatus">Status lokasi: belum dicoba</div>
 
-  <script src="app.js"></script>
+    <div style="margin-top:12px;">
+      <button id="btnSaveAttendance" type="button">Simpan Kehadiran</button>
+      <button id="btnTryLocation" type="button" style="margin-left:8px;">Coba Dapatkan Lokasi</button>
+    </div>
+  </div>
+
+  <!-- Script utama (defer agar DOM siap) -->
+  <script src="app.js" defer></script>
 </body>
 </html>
