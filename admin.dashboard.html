@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Admin SDN Muhara</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.5/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <style>
+    body { background-color: #f9fafb; font-family: 'Inter', sans-serif; }
+    .sidebar { transition: all 0.3s ease; }
+    .sidebar.collapsed { transform: translateX(-100%); }
+    .overlay { display: none; }
+    .overlay.active { display: block; }
+  </style>
+</head>
+<body class="text-gray-800">
+  <!-- NAVBAR -->
+  <header class="fixed top-0 left-0 right-0 z-40 bg-white shadow flex items-center justify-between px-4 py-3">
+    <div class="flex items-center gap-3">
+      <button id="toggleSidebar" class="lg:hidden text-blue-900 text-2xl font-bold">☰</button>
+      <img src="[Ukuran asli] SD Negeri Muhara.png" alt="Logo" class="h-12 bg-white p-1 rounded">
+      <h1 class="text-xl font-bold text-blue-900">Dashboard Admin SDN Muhara</h1>
+    </div>
+    <button id="logoutBtn" class="bg-red-600 text-white px-3 py-1.5 rounded hover:bg-red-700">Keluar</button>
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="sidebar fixed top-0 left-0 h-screen w-64 bg-blue-900 text-white flex flex-col pt-20 shadow-lg">
+    <nav class="flex-grow">
+      <a href="#" data-page="dashboard" class="block px-6 py-3 hover:bg-blue-700 active">🏠 Dashboard</a>
+      <a href="#" data-page="guru" class="block px-6 py-3 hover:bg-blue-700">👩‍🏫 Data Guru</a>
+      <a href="#" data-page="laporan" class="block px-6 py-3 hover:bg-blue-700">📊 Laporan Bulanan</a>
+    </nav>
+    <footer class="text-center py-4 text-sm border-t border-blue-800 opacity-70">
+      © 2025 SDN Muhara
+    </footer>
+  </aside>
+
+  <!-- OVERLAY (untuk sidebar di HP) -->
+  <div id="overlay" class="overlay fixed inset-0 bg-black bg-opacity-50 z-30"></div>
+
+  <!-- MAIN CONTENT -->
+  <main class="pt-20 lg:ml-64 px-4 lg:px-8 pb-10">
+    <!-- DASHBOARD -->
+    <section id="page-dashboard">
+      <h2 class="text-2xl font-bold text-blue-900 mb-6">📊 Ringkasan Kehadiran</h2>
+      <div class="grid md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow p-6 text-center">
+          <h3 class="text-gray-500">Total Guru</h3>
+          <p id="stat-total-guru" class="text-4xl font-bold text-blue-900">0</p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-6 text-center">
+          <h3 class="text-gray-500">Hadir Hari Ini</h3>
+          <p id="stat-hadir" class="text-4xl font-bold text-green-600">0</p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-6 text-center">
+          <h3 class="text-gray-500">Izin / Sakit / DL</h3>
+          <p id="stat-lain" class="text-4xl font-bold text-yellow-500">0</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow p-6 mb-8">
+        <h3 class="font-semibold text-blue-900 mb-4">Grafik Kehadiran Harian</h3>
+        <canvas id="chartHarian" height="100"></canvas>
+      </div>
+
+      <div class="bg-white rounded-xl shadow p-6">
+        <h3 class="font-semibold text-blue-900 mb-4">Aktivitas Terbaru</h3>
+        <div id="recent-activity" class="space-y-2 text-sm text-gray-700">
+          <p class="text-gray-400">Memuat data...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- DATA GURU -->
+    <section id="page-guru" class="hidden">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-2xl font-bold text-blue-900">👩‍🏫 Manajemen Data Guru</h2>
+        <button id="btnTambahGuru" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">+ Tambah Guru</button>
+      </div>
+
+      <div class="bg-white rounded-xl shadow p-6 overflow-x-auto">
+        <table class="min-w-full border text-sm">
+          <thead class="bg-blue-50 text-blue-900 font-semibold">
+            <tr>
+              <th class="border p-2">NIP</th>
+              <th class="border p-2">Nama</th>
+              <th class="border p-2">Jabatan</th>
+              <th class="border p-2">Status</th>
+              <th class="border p-2 text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tabelGuru">
+            <tr><td colspan="5" class="text-center p-4 text-gray-500">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- LAPORAN BULANAN -->
+    <section id="page-laporan" class="hidden">
+      <h2 class="text-2xl font-bold text-blue-900 mb-6">📅 Laporan Bulanan</h2>
+
+      <div class="flex flex-wrap items-center gap-4 mb-6">
+        <label class="font-semibold text-gray-700">Pilih Bulan:</label>
+        <input type="month" id="bulanLaporan" class="border rounded p-2">
+        <button id="tampilkanLaporan" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Tampilkan</button>
+        <button id="exportLaporan" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">📥 Unduh Excel</button>
+      </div>
+
+      <div class="bg-white rounded-xl shadow p-6 overflow-auto mb-6">
+        <table class="min-w-full border text-sm" id="tabelLaporan">
+          <thead class="bg-blue-50 text-blue-900 font-semibold">
+            <tr>
+              <th class="border p-2">Tanggal</th>
+              <th class="border p-2">Nama Guru</th>
+              <th class="border p-2">Status</th>
+              <th class="border p-2">Jam</th>
+              <th class="border p-2">Lokasi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="5" class="p-4 text-center text-gray-500">Pilih bulan untuk menampilkan data.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="resumeLaporan" class="bg-blue-50 rounded-xl shadow p-6 text-gray-700"></div>
+    </section>
+  </main>
+
+  <!-- MODAL TAMBAH/EDIT GURU -->
+  <div id="modalGuru" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-lg w-11/12 md:w-1/2 lg:w-1/3 p-6 relative">
+      <button id="closeModalGuru" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+      <h3 id="modalTitle" class="text-xl font-semibold text-blue-900 mb-4">Tambah Guru</h3>
+
+      <form id="formGuru" class="space-y-3">
+        <input type="hidden" id="guruIndex">
+        <div>
+          <label class="block font-semibold text-gray-700">Nama Guru</label>
+          <input id="namaGuru" type="text" required class="border rounded w-full p-2">
+        </div>
+        <div>
+          <label class="block font-semibold text-gray-700">NIP</label>
+          <input id="nipGuru" type="text" class="border rounded w-full p-2">
+        </div>
+        <div>
+          <label class="block font-semibold text-gray-700">Jabatan</label>
+          <input id="jabatanGuru" type="text" class="border rounded w-full p-2">
+        </div>
+        <div>
+          <label class="block font-semibold text-gray-700">Status</label>
+          <select id="statusGuru" class="border rounded w-full p-2">
+            <option value="PNS">PNS</option>
+            <option value="PPPK">PPPK</option>
+            <option value="Honorer">Honorer</option>
+          </select>
+        </div>
+
+        <div class="text-right pt-3">
+          <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Basic UI switching for demo preview (tanpa data)
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const toggleSidebar = document.getElementById('toggleSidebar');
+
+    toggleSidebar.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      overlay.classList.toggle('active');
+    });
+    overlay.addEventListener('click', () => {
+      sidebar.classList.add('collapsed');
+      overlay.classList.remove('active');
+    });
+
+    // Navigasi antar halaman
+    document.querySelectorAll('aside a[data-page]').forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
+        document.querySelectorAll('aside a').forEach(a => a.classList.remove('bg-blue-700'));
+        const page = e.target.dataset.page;
+        document.getElementById('page-' + page).classList.remove('hidden');
+        e.target.classList.add('bg-blue-700');
+        if (window.innerWidth < 1024) sidebar.classList.add('collapsed');
+      });
+    });
+
+    // Modal (demo)
+    const modal = document.getElementById('modalGuru');
+    const openBtn = document.getElementById('btnTambahGuru');
+    const closeBtn = document.getElementById('closeModalGuru');
+    openBtn.addEventListener('click', () => modal.classList.remove('hidden'));
+    closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+  </script>
+</body>
+</html>
