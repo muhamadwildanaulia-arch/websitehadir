@@ -3,311 +3,349 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Dashboard Admin SDN Muhara</title>
+  <title>Admin - Aplikasi Kehadiran Guru SDN Muhara</title>
 
   <!-- Tailwind (CDN) -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.5/dist/tailwind.min.css" rel="stylesheet">
 
-  <!-- Chart.js dan SheetJS -->
+  <!-- Chart.js & SheetJS -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
   <style>
-    /* fallback jika Tailwind gagal: minimal styling agar layout terbaca */
-    body { font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:#f8fafc; }
-    .sidebar { transition: transform .25s ease; }
-    .sidebar.collapsed { transform: translateX(-110%); }
-    #modalGuru { backdrop-filter: blur(2px); }
-    /* force canvas responsive */
+    body { background-color: #f4f6f9; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+    .tab-active { background-color: #1e3a8a; color: #fff; }
+    .tab-btn:hover { background-color: #2563eb; color: white; }
     canvas { max-width:100%; height:auto !important; }
+    /* small responsive tweaks */
+    @media (max-width:640px) {
+      .header-grid { grid-template-columns: 1fr; gap: 0.5rem; }
+      #analogClock { margin-left: 0; }
+    }
   </style>
 </head>
 <body class="text-gray-800">
 
-  <!-- NAVBAR -->
-  <header class="fixed top-0 left-0 right-0 z-40 bg-white shadow flex items-center justify-between px-4 py-3">
-    <div class="flex items-center gap-3">
-      <button id="toggleSidebar" class="lg:hidden text-blue-900 text-2xl font-bold">☰</button>
-      <img src="[Ukuran asli] SD Negeri Muhara.png" alt="Logo" class="h-12 bg-white p-1 rounded">
-      <h1 class="text-xl font-bold text-blue-900">Dashboard Admin SDN Muhara</h1>
+  <!-- HEADER (mirip index.html) -->
+  <header class="bg-blue-900 text-white p-5 shadow flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center space-x-4">
+      <img src="[Ukuran asli] SD Negeri Muhara.png" alt="Logo SDN Muhara" class="h-20 w-auto rounded-md bg-white p-1">
+      <div>
+        <h1 class="text-2xl font-bold">Aplikasi Kehadiran Guru SDN Muhara — Admin</h1>
+        <p id="current-date" class="text-sm opacity-80"></p>
+      </div>
     </div>
-    <div class="flex items-center gap-3">
-      <div id="lastUpdated" class="text-sm text-gray-500 mr-3"></div>
-      <button id="btnRefresh" title="Refresh data" class="bg-yellow-400 text-black px-3 py-1 rounded">🔄 Refresh</button>
-      <button id="logoutBtn" class="bg-red-600 text-white px-3 py-1.5 rounded hover:bg-red-700">Keluar</button>
+
+    <div class="flex items-center gap-4">
+      <canvas id="analogClock" width="100" height="100" class="bg-white rounded-full shadow-md"></canvas>
+      <div class="text-right">
+        <div id="lastUpdated" class="text-sm text-white/80"></div>
+        <div class="mt-2">
+          <button id="btnRefresh" class="bg-yellow-400 text-black px-3 py-1 rounded mr-2">🔄 Refresh</button>
+          <a href="admin.html" id="btnLogout" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded">Keluar</a>
+        </div>
+      </div>
     </div>
   </header>
 
-  <!-- SIDEBAR -->
-  <aside id="sidebar" class="sidebar fixed top-0 left-0 h-screen w-64 bg-blue-900 text-white flex flex-col pt-20 shadow-lg">
-    <nav class="flex-grow">
-      <a href="#" data-page="dashboard" class="block px-6 py-3 hover:bg-blue-700 bg-blue-700">🏠 Dashboard</a>
-      <a href="#" data-page="guru" class="block px-6 py-3 hover:bg-blue-700">👩‍🏫 Data Guru</a>
-      <a href="#" data-page="laporan" class="block px-6 py-3 hover:bg-blue-700">📊 Laporan Bulanan</a>
-    </nav>
-    <footer class="text-center py-4 text-sm border-t border-blue-800 opacity-80">
-      © 2025 SDN Muhara
-    </footer>
-  </aside>
+  <!-- NAV TABS (like index) -->
+  <nav class="flex justify-center bg-blue-800 text-white font-semibold shadow-md">
+    <button id="tab-dashboard" class="tab-btn px-6 py-3 tab-active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+    <button id="tab-guru" class="tab-btn px-6 py-3" onclick="switchTab('guru')">👩‍🏫 Data Guru</button>
+    <button id="tab-laporan" class="tab-btn px-6 py-3" onclick="switchTab('laporan')">📅 Laporan Bulanan</button>
+  </nav>
 
-  <!-- overlay mobile -->
-  <div id="overlay" class="hidden fixed inset-0 bg-black bg-opacity-40 z-30"></div>
-
-  <!-- MAIN -->
-  <main class="pt-20 lg:ml-64 px-4 lg:px-8 pb-10">
+  <!-- CONTENT: three sections like index -->
+  <main class="p-6">
     <!-- Dashboard -->
-    <section id="page-dashboard">
-      <h2 class="text-2xl font-bold text-blue-900 mb-2">📊 Ringkasan Kehadiran</h2>
+    <section id="content-dashboard">
+      <h2 class="text-xl font-semibold mb-4 text-blue-900">Ringkasan Kehadiran</h2>
 
-      <div class="grid md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-white rounded-xl shadow p-6 text-center">
+      <div class="grid md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white p-4 rounded shadow text-center">
           <h3 class="text-gray-500">Total Guru</h3>
-          <p id="stat-total-guru" class="text-4xl font-bold text-blue-900">0</p>
+          <p id="stat-total-guru" class="text-3xl font-bold text-blue-900">0</p>
         </div>
-        <div class="bg-white rounded-xl shadow p-6 text-center">
+        <div class="bg-white p-4 rounded shadow text-center">
           <h3 class="text-gray-500">Hadir Hari Ini</h3>
-          <p id="stat-hadir" class="text-4xl font-bold text-green-600">0</p>
+          <p id="stat-hadir" class="text-3xl font-bold text-green-600">0</p>
         </div>
-        <div class="bg-white rounded-xl shadow p-6 text-center">
+        <div class="bg-white p-4 rounded shadow text-center">
           <h3 class="text-gray-500">Izin / Sakit / DL</h3>
-          <p id="stat-lain" class="text-4xl font-bold text-yellow-500">0</p>
+          <p id="stat-lain" class="text-3xl font-bold text-yellow-500">0</p>
         </div>
       </div>
 
-      <div class="bg-white rounded-xl shadow p-6 mb-8">
-        <h3 class="font-semibold text-blue-900 mb-4">Grafik Kehadiran Harian</h3>
-        <canvas id="chartHarian" height="120"></canvas>
+      <div class="bg-white p-5 rounded shadow mb-6">
+        <h3 class="text-lg font-semibold text-blue-900 mb-3">Grafik Kehadiran Hari Ini</h3>
+        <canvas id="dailyChart" height="100"></canvas>
       </div>
 
-      <div class="bg-white rounded-xl shadow p-6">
-        <h3 class="font-semibold text-blue-900 mb-4">Aktivitas Terbaru</h3>
-        <div id="recent-activity" class="space-y-2 text-sm text-gray-700">
+      <div class="bg-white p-5 rounded shadow">
+        <h3 class="text-lg font-semibold text-blue-900 mb-3">Aktivitas Terbaru</h3>
+        <div id="recent-activity" class="text-sm text-gray-700">
           <p class="text-gray-400">Memuat data...</p>
         </div>
       </div>
     </section>
 
     <!-- Data Guru -->
-    <section id="page-guru" class="hidden">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-2xl font-bold text-blue-900">👩‍🏫 Manajemen Data Guru</h2>
-        <button id="btnTambahGuru" disabled class="bg-green-600 text-white px-4 py-2 rounded-lg opacity-60">+ Tambah Guru</button>
-      </div>
+    <section id="content-guru" class="hidden">
+      <h2 class="text-xl font-semibold mb-4 text-blue-900">Manajemen Data Guru (Read-only)</h2>
 
-      <div class="bg-white rounded-xl shadow p-6 overflow-x-auto">
-        <table class="min-w-full border text-sm">
-          <thead class="bg-blue-50 text-blue-900 font-semibold">
-            <tr>
-              <th class="border p-2">NIP</th>
-              <th class="border p-2">Nama</th>
-              <th class="border p-2">Jabatan</th>
-              <th class="border p-2">Status</th>
-              <th class="border p-2 text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="tabelGuru">
-            <tr><td colspan="5" class="text-center p-4 text-gray-500">Memuat data...</td></tr>
-          </tbody>
-        </table>
+      <div class="bg-white p-5 rounded shadow mb-4">
+        <div class="flex justify-between items-center mb-3">
+          <p class="text-sm text-gray-600">Mode hanya-baca — tidak mengubah data di Google Sheet</p>
+          <button id="btnInfo" class="bg-blue-700 text-white px-3 py-1 rounded">Info</button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse border text-sm">
+            <thead class="bg-gray-100">
+              <tr>
+                <th class="border p-2">Nama Guru</th>
+                <th class="border p-2">NIP</th>
+                <th class="border p-2">Jabatan</th>
+                <th class="border p-2">Status</th>
+                <th class="border p-2">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="guru-list"><tr><td colspan="5" class="text-center p-4 text-gray-500">Memuat data...</td></tr></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
-    <!-- Laporan -->
-    <section id="page-laporan" class="hidden">
-      <h2 class="text-2xl font-bold text-blue-900 mb-6">📅 Laporan Bulanan</h2>
+    <!-- Laporan Bulanan -->
+    <section id="content-laporan" class="hidden">
+      <h2 class="text-xl font-semibold mb-4 text-blue-900">Laporan Bulanan</h2>
 
-      <div class="flex flex-wrap items-center gap-4 mb-6">
-        <label class="font-semibold text-gray-700">Pilih Bulan:</label>
-        <input type="month" id="bulanLaporan" class="border rounded p-2">
-        <button id="tampilkanLaporan" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Tampilkan</button>
-        <button id="exportLaporan" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">📥 Unduh Excel</button>
+      <div class="bg-white p-5 rounded shadow mb-4">
+        <div class="flex flex-wrap gap-3 items-center">
+          <input type="month" id="bulan-laporan" class="border p-2 rounded">
+          <button id="tampilkanLaporanBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Tampilkan</button>
+          <button id="exportLaporanBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">📥 Export Excel</button>
+        </div>
       </div>
 
-      <div class="bg-white rounded-xl shadow p-6 overflow-auto mb-6">
-        <table class="min-w-full border text-sm" id="tabelLaporan">
-          <thead class="bg-blue-50 text-blue-900 font-semibold">
-            <tr>
-              <th class="border p-2">Tanggal</th>
-              <th class="border p-2">Nama Guru</th>
-              <th class="border p-2">Status</th>
-              <th class="border p-2">Jam</th>
-              <th class="border p-2">Lokasi</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td colspan="5" class="p-4 text-center text-gray-500">Pilih bulan untuk menampilkan data.</td></tr>
-          </tbody>
-        </table>
+      <div class="bg-white p-5 rounded shadow">
+        <div class="overflow-x-auto">
+          <table id="tabel-laporan" class="w-full border-collapse border text-sm">
+            <thead class="bg-gray-100">
+              <tr>
+                <th class="border p-2">Tanggal</th>
+                <th class="border p-2">Nama</th>
+                <th class="border p-2">Masuk</th>
+                <th class="border p-2">Keluar</th>
+                <th class="border p-2">Status</th>
+              </tr>
+            </thead>
+            <tbody id="laporanTableBody"><tr><td colspan="5" class="p-4 text-center text-gray-500">Pilih bulan untuk menampilkan laporan.</td></tr></tbody>
+          </table>
+        </div>
+        <div id="resume-laporan" class="mt-4 text-gray-700"></div>
       </div>
-
-      <div id="resumeLaporan" class="bg-blue-50 rounded-xl shadow p-6 text-gray-700"></div>
     </section>
   </main>
 
-  <!-- MODAL (tetap ada tapi non-interaktif untuk read-only) -->
-  <div id="modalGuru" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-xl shadow-lg w-11/12 md:w-1/2 lg:w-1/3 p-6 relative">
-      <button id="closeModalGuru" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
-      <h3 id="modalTitle" class="text-xl font-semibold text-blue-900 mb-4">Info (Read-only)</h3>
-      <p class="text-sm text-gray-600">Halaman admin ini dalam mode hanya-baca (tidak mengubah Google Sheet).</p>
-      <div class="text-right pt-3">
-        <button id="closeModalBtn" class="bg-slate-700 text-white px-4 py-2 rounded">Tutup</button>
-      </div>
+  <!-- Modal simple info -->
+  <div id="modalInfo" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 w-11/12 md:w-1/2">
+      <h3 class="text-lg font-semibold mb-2">Informasi</h3>
+      <p>Halaman admin ini berjalan dalam mode hanya-baca — tidak akan menulis atau menghapus data pada Google Sheet.</p>
+      <div class="text-right mt-4"><button id="closeInfo" class="bg-blue-700 text-white px-4 py-2 rounded">Tutup</button></div>
     </div>
   </div>
 
-  <!-- Inline JS: read-only admin-dashboard logic -->
+  <!-- Inline JS: logic read-only, mirrors index layout -->
   <script>
   (function(){
     const GS_URL = 'https://script.google.com/macros/s/AKfycbw1Hvqf8_pY8AoeI-MOzLHYQEX0hrlY9S7C07Wvmzzey_u4w5cAZpTVbAm1opzBTeMJ/exec';
+    let teachers = [];
+    let attendances = [];
+    let dailyChart = null;
 
-    let guruList = [];
-    let kehadiranList = [];
-    let chartHarian = null;
-    let lastUpdated = null;
+    // === UI elements ===
+    const tabs = { dashboard: document.getElementById('content-dashboard'), guru: document.getElementById('content-guru'), laporan: document.getElementById('content-laporan') };
+    function switchTab(name){
+      Object.values(tabs).forEach(t => t.classList.add('hidden'));
+      tabs[name].classList.remove('hidden');
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-active'));
+      document.getElementById('tab-' + name).classList.add('tab-active');
+    }
+    window.switchTab = switchTab; // expose for inline onclick
 
-    // UI elements
-    const pages = { dashboard: document.getElementById('page-dashboard'), guru: document.getElementById('page-guru'), laporan: document.getElementById('page-laporan') };
-    document.querySelectorAll('aside a[data-page]').forEach(a => a.addEventListener('click', e => {
-      e.preventDefault();
-      Object.values(pages).forEach(p => p.classList.add('hidden'));
-      pages[a.dataset.page].classList.remove('hidden');
-      document.querySelectorAll('aside a').forEach(x => x.classList.remove('bg-blue-700'));
-      a.classList.add('bg-blue-700');
-      // close sidebar on small screens
-      if (window.innerWidth < 1024) document.getElementById('sidebar').classList.add('collapsed');
-    }));
+    // header date
+    document.getElementById('current-date').textContent = new Date().toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric'});
 
-    // sidebar toggle
-    document.getElementById('toggleSidebar').addEventListener('click', () => {
-      document.getElementById('sidebar').classList.toggle('collapsed');
-      document.getElementById('overlay').classList.toggle('hidden');
-    });
-    document.getElementById('overlay').addEventListener('click', () => {
-      document.getElementById('sidebar').classList.add('collapsed');
-      document.getElementById('overlay').classList.add('hidden');
-    });
+    // analog clock (copied from index)
+    (function drawAnalogClock(){
+      const canvas = document.getElementById("analogClock");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const radius = canvas.height / 2;
+      ctx.translate(radius, radius);
 
-    // basic modal close
-    document.getElementById('closeModalBtn').addEventListener('click', () => document.getElementById('modalGuru').classList.add('hidden'));
-    document.getElementById('closeModalGuru').addEventListener('click', () => document.getElementById('modalGuru').classList.add('hidden'));
-    document.getElementById('btnTambahGuru').addEventListener('click', () => document.getElementById('modalGuru').classList.remove('hidden'));
+      function drawFace(){
+        ctx.beginPath();
+        ctx.arc(0,0, radius * 0.95, 0, 2 * Math.PI);
+        ctx.fillStyle = "white"; ctx.fill();
+        ctx.strokeStyle = "#1e3a8a"; ctx.lineWidth = radius * 0.05; ctx.stroke();
+        ctx.beginPath(); ctx.arc(0,0, radius*0.05, 0, 2*Math.PI); ctx.fillStyle="#1e3a8a"; ctx.fill();
+      }
+      function drawNumbers(){
+        ctx.font = radius * 0.15 + "px Arial";
+        ctx.textBaseline = "middle"; ctx.textAlign = "center";
+        for (let num=1; num<=12; num++){
+          const ang = num * Math.PI / 6;
+          ctx.rotate(ang); ctx.translate(0, -radius * 0.85); ctx.rotate(-ang);
+          ctx.fillText(num.toString(), 0, 0);
+          ctx.rotate(ang); ctx.translate(0, radius * 0.85); ctx.rotate(-ang);
+        }
+      }
+      function drawHand(pos, length, width, color){
+        ctx.beginPath(); ctx.lineWidth = width; ctx.lineCap = "round"; ctx.strokeStyle = color; ctx.moveTo(0,0);
+        ctx.rotate(pos); ctx.lineTo(0, -length); ctx.stroke(); ctx.rotate(-pos);
+      }
+      function drawTime(){
+        const now = new Date(); const hour = now.getHours()%12; const minute = now.getMinutes(); const second = now.getSeconds();
+        const hourPos = ((hour * Math.PI) / 6) + ((minute * Math.PI) / (6*60)) + ((second * Math.PI) / (360*60));
+        const minutePos = ((minute * Math.PI) / 30) + ((second * Math.PI) / (30*60));
+        const secondPos = (second * Math.PI) / 30;
+        drawHand(hourPos, radius*0.5, radius*0.07, "#1e3a8a");
+        drawHand(minutePos, radius*0.8, radius*0.05, "#2563eb");
+        drawHand(secondPos, radius*0.9, radius*0.02, "#ef4444");
+      }
+      function drawClock(){ ctx.clearRect(-radius,-radius, canvas.width, canvas.height); drawFace(); drawNumbers(); drawTime(); }
+      drawClock(); setInterval(drawClock, 1000);
+    })();
 
-    // refresh & logout
-    document.getElementById('btnRefresh').addEventListener('click', initDashboard);
-    document.getElementById('logoutBtn').addEventListener('click', () => { if (confirm('Keluar dari dashboard?')) window.location.href='admin.html'; });
+    // last updated & refresh
+    function setLastUpdated(){ const el = document.getElementById('lastUpdated'); const s = new Date(); el.textContent = '⏱️ Diperbarui: ' + s.toLocaleString('id-ID', { timeZone:'Asia/Jakarta', hour12:false }) + ' WIB'; }
+    document.getElementById('btnRefresh').addEventListener('click', init);
 
-    async function initDashboard(){
+    // modal info
+    document.getElementById('btnInfo').addEventListener('click', () => document.getElementById('modalInfo').classList.remove('hidden'));
+    document.getElementById('closeInfo').addEventListener('click', () => document.getElementById('modalInfo').classList.add('hidden'));
+
+    // init load
+    async function init(){
       try {
-        showLoading('📡 Memuat data dari Google Sheet...');
-        await Promise.all([ loadGuru(), loadKehadiran() ]);
+        showLoading('Memuat data...');
+        await Promise.all([ loadTeachers(), loadAttendances() ]);
         hideLoading();
         renderDashboard();
         setLastUpdated();
       } catch (err) {
         hideLoading();
-        console.error('Init error', err);
-        alert('Gagal memuat data. Lihat konsol untuk detail (Ctrl+Shift+J).');
+        console.error('Gagal memuat data', err);
+        alert('Gagal memuat data. Buka console (Ctrl+Shift+J) untuk detail.');
       }
     }
 
-    // Load guru (GET)
-    async function loadGuru(){
+    // normalize date helpers
+    function normalizeDate(value){
+      if (!value) return '';
+      if (typeof value === 'string' && value.includes('T')) {
+        const d = new Date(value); d.setHours(d.getUTCHours()+7); return d.toISOString().split('T')[0];
+      }
+      return String(value).slice(0,10);
+    }
+
+    // load teachers (read-only)
+    async function loadTeachers(){
       const res = await fetch(GS_URL + '?sheet=guru');
-      if (!res.ok) throw new Error('Response not ok for guru: ' + res.status);
+      if (!res.ok) throw new Error('Response error for guru: ' + res.status);
       const data = await res.json();
-      guruList = Array.isArray(data) && data.length > 1 ? data.slice(1).map(r => ({ nama: r[0]||'', nip: r[1]||'', jabatan: r[2]||'', status: r[3]||'' })) : [];
-      renderGuruTable();
-      updateStats();
+      teachers = Array.isArray(data) && data.length>1 ? data.slice(1).map(r => ({ nama_guru: r[0]||'', nip: r[1]||'', jabatan: r[2]||'', status: r[3]||'' })) : [];
+      renderTeacherTable();
     }
 
-    // Load kehadiran (GET)
-    async function loadKehadiran(){
+    function renderTeacherTable(){
+      const tbody = document.getElementById('guru-list');
+      if (!teachers.length) { tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Belum ada data</td></tr>'; return; }
+      tbody.innerHTML = teachers.map(t => `<tr><td class="border p-2">${escapeHtml(t.nama_guru)}</td><td class="border p-2">${escapeHtml(t.nip)}</td><td class="border p-2">${escapeHtml(t.jabatan)}</td><td class="border p-2">${escapeHtml(t.status)}</td><td class="border p-2 text-center text-gray-400 italic">Read-only</td></tr>`).join('');
+    }
+
+    // load attendances (read-only)
+    async function loadAttendances(){
       const res = await fetch(GS_URL + '?sheet=kehadiran');
-      if (!res.ok) throw new Error('Response not ok for kehadiran: ' + res.status);
+      if (!res.ok) throw new Error('Response error for kehadiran: ' + res.status);
       const data = await res.json();
-      kehadiranList = Array.isArray(data) && data.length > 1 ? data.slice(1).map(r => ({ nama: r[0]||'', status: r[1]||'', jam: r[2]||'', tanggal: normalizeDate(r[3]), lokasi: r[4]||'' })) : [];
-      updateStats();
+      attendances = Array.isArray(data) && data.length>1 ? data.slice(1).map(r => ({
+        nama_guru: r[0]||'',
+        status: r[1]||'',
+        jam: r[2]||'',
+        tanggal: normalizeDate(r[3]),
+        lokasi: r[4]||''
+      })) : [];
     }
 
-    function normalizeDate(v){
-      if (!v) return '';
-      if (typeof v === 'string' && v.includes('T')) {
-        const d = new Date(v); d.setHours(d.getUTCHours()+7); return d.toISOString().split('T')[0];
-      }
-      return String(v).slice(0,10);
-    }
-
-    function updateStats(){
-      document.getElementById('stat-total-guru').textContent = guruList.length;
+    // dashboard rendering
+    function renderDashboard(){
+      // stats
+      document.getElementById('stat-total-guru').textContent = teachers.length;
       const today = new Date().toISOString().split('T')[0];
-      const todayData = kehadiranList.filter(r => r.tanggal === today);
-      const hadir = todayData.filter(r => r.status === 'Hadir').length;
-      const lain = todayData.filter(r => r.status !== 'Hadir').length;
-      document.getElementById('stat-hadir').textContent = hadir;
-      document.getElementById('stat-lain').textContent = lain;
+      const todayData = attendances.filter(a => a.tanggal === today);
+      document.getElementById('stat-hadir').textContent = todayData.filter(d => d.status === 'Hadir').length;
+      document.getElementById('stat-lain').textContent = todayData.filter(d => d.status !== 'Hadir').length;
+
+      // chart
+      renderChart();
+
+      // recent activity
+      const recent = document.getElementById('recent-activity');
+      const sorted = attendances.slice().sort((a,b) => (b.tanggal + (b.jam||'')).localeCompare(a.tanggal + (a.jam||'')));
+      const latest = sorted.slice(0,10);
+      recent.innerHTML = latest.length ? latest.map(r => `<div class="flex justify-between border-b py-1"><span>${escapeHtml(r.nama_guru)} — ${escapeHtml(r.status)}</span><span class="text-gray-500 text-xs">${escapeHtml(r.tanggal)}</span></div>`).join('') : '<p class="text-gray-400">Belum ada data kehadiran.</p>';
     }
 
     function renderChart(){
-      const ctx = document.getElementById('chartHarian').getContext('2d');
+      const ctx = document.getElementById('dailyChart').getContext('2d');
       const today = new Date().toISOString().split('T')[0];
-      const todays = kehadiranList.filter(r => r.tanggal === today);
+      const todayData = attendances.filter(a => a.tanggal === today);
       const counts = { Hadir:0, Izin:0, Sakit:0, 'Dinas Luar':0 };
-      todays.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
-      if (chartHarian) chartHarian.destroy();
-      chartHarian = new Chart(ctx, { type:'bar', data:{ labels:Object.keys(counts), datasets:[{ label:'Jumlah', data:Object.values(counts), backgroundColor:['#16a34a','#facc15','#f87171','#3b82f6'] }]}, options:{ responsive:true, plugins:{ legend:{ display:false }}, scales:{ y:{ beginAtZero:true } } } });
+      todayData.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+
+      if (dailyChart && typeof dailyChart.destroy === 'function') dailyChart.destroy();
+      dailyChart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: Object.keys(counts), datasets: [{ label: 'Jumlah Guru', data: Object.values(counts), backgroundColor: ['#4CAF50','#FFC107','#F44336','#2196F3'] }] },
+        options: { responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
+      });
     }
 
-    function renderRecentActivity(){
-      const c = document.getElementById('recent-activity');
-      const sorted = [...kehadiranList].sort((a,b) => (b.tanggal + (b.jam||'')).localeCompare(a.tanggal + (a.jam||'')));
-      const latest = sorted.slice(0,10);
-      c.innerHTML = latest.length ? latest.map(r => `<div class="flex justify-between border-b py-1"><span>${escapeHtml(r.nama)} - ${escapeHtml(r.status)}</span><span class="text-gray-500 text-xs">${escapeHtml(r.tanggal)}</span></div>`).join('') : `<p class="text-gray-400">Belum ada data kehadiran.</p>`;
-    }
-
-    function renderDashboard(){
-      updateStats(); renderChart(); renderRecentActivity();
-    }
-
-    function renderGuruTable(){
-      const tbody = document.getElementById('tabelGuru');
-      if (!guruList.length) { tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-gray-500">Belum ada data guru.</td></tr>`; return; }
-      tbody.innerHTML = guruList.map(g => `<tr class="hover:bg-blue-50"><td class="border p-2">${escapeHtml(g.nip)}</td><td class="border p-2">${escapeHtml(g.nama)}</td><td class="border p-2">${escapeHtml(g.jabatan)}</td><td class="border p-2">${escapeHtml(g.status)}</td><td class="border p-2 text-center text-gray-400 italic">Tidak dapat diubah</td></tr>`).join('');
-    }
-
-    // laporan
-    document.getElementById('tampilkanLaporan').addEventListener('click', () => {
-      const bulan = document.getElementById('bulanLaporan').value;
+    // laporan monthly
+    document.getElementById('tampilkanLaporanBtn').addEventListener('click', () => {
+      const bulan = document.getElementById('bulan-laporan').value;
       if (!bulan) return alert('Pilih bulan terlebih dahulu.');
-      const [y,m] = bulan.split('-');
-      const filtered = kehadiranList.filter(r => r.tanggal.startsWith(`${y}-${m}`));
-      const tbody = document.querySelector('#tabelLaporan tbody');
-      if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">Tidak ada data untuk bulan ini.</td></tr>`; document.getElementById('resumeLaporan').innerHTML=''; return; }
-      tbody.innerHTML = filtered.map(r => `<tr><td class="border p-2">${escapeHtml(r.tanggal)}</td><td class="border p-2">${escapeHtml(r.nama)}</td><td class="border p-2">${escapeHtml(r.status)}</td><td class="border p-2">${escapeHtml(r.jam)}</td><td class="border p-2">${escapeHtml(r.lokasi)}</td></tr>`).join('');
-      const total = { Hadir:0, Izin:0, Sakit:0, 'Dinas Luar':0 }; filtered.forEach(r => { if (total[r.status]!==undefined) total[r.status]++; });
-      document.getElementById('resumeLaporan').innerHTML = `<h4 class="font-semibold text-blue-900 mb-2">Resume Bulan ${m}-${y}</h4><p>Hadir: <b>${total.Hadir}</b> | Izin: <b>${total.Izin}</b> | Sakit: <b>${total.Sakit}</b> | Dinas Luar: <b>${total['Dinas Luar']}</b></p><p>Total Data: <b>${filtered.length}</b></p>`;
+      const [tahun, bulanStr] = bulan.split('-');
+      const filtered = attendances.filter(a => a.tanggal.startsWith(`${tahun}-${bulanStr}`));
+      const tbody = document.getElementById('laporanTableBody');
+      if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Tidak ada data untuk bulan ini.</td></tr>'; document.getElementById('resume-laporan').innerHTML=''; return; }
+      tbody.innerHTML = filtered.map(r => `<tr><td class="border p-2">${escapeHtml(r.tanggal)}</td><td class="border p-2">${escapeHtml(r.nama_guru)}</td><td class="border p-2">${escapeHtml(r.jam || '')}</td><td class="border p-2">${escapeHtml('')}</td><td class="border p-2">${escapeHtml(r.status)}</td></tr>`).join('');
+      const totals = { Hadir:0, Izin:0, Sakit:0, 'Dinas Luar':0 }; filtered.forEach(x => { if (totals[x.status] !== undefined) totals[x.status]++; });
+      document.getElementById('resume-laporan').innerHTML = `<p>Hadir: <b>${totals.Hadir}</b> | Izin: <b>${totals.Izin}</b> | Sakit: <b>${totals.Sakit}</b> | Dinas Luar: <b>${totals['Dinas Luar']}</b></p><p>Total baris: <b>${filtered.length}</b></p>`;
     });
 
-    // export
-    document.getElementById('exportLaporan').addEventListener('click', () => {
-      const rows = []; document.querySelectorAll('#tabelLaporan tbody tr').forEach(tr => { const td = tr.querySelectorAll('td'); if (td.length===5) rows.push({ Tanggal:td[0].textContent, Nama:td[1].textContent, Status:td[2].textContent, Jam:td[3].textContent, Lokasi:td[4].textContent }); });
-      if (!rows.length) return alert('Tidak ada data laporan untuk diekspor.');
+    // export laporan
+    document.getElementById('exportLaporanBtn').addEventListener('click', () => {
+      const rows = [];
+      document.querySelectorAll('#tabel-laporan tbody tr').forEach(tr => { const td = tr.querySelectorAll('td'); if (td.length===5) rows.push({ Tanggal:td[0].textContent, Nama:td[1].textContent, Masuk:td[2].textContent, Keluar:td[3].textContent, Status:td[4].textContent }); });
+      if (!rows.length) return alert('Tidak ada data untuk diekspor. Tampilkan laporan terlebih dahulu.');
       const wb = XLSX.utils.book_new(); const ws = XLSX.utils.json_to_sheet(rows); XLSX.utils.book_append_sheet(wb, ws, 'Laporan'); XLSX.writeFile(wb, `laporan_${new Date().toISOString().split('T')[0]}.xlsx`);
     });
 
-    // small helpers
+    // helper: escape and loading
     function escapeHtml(s){ return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
-    function showLoading(msg){ if (!document.getElementById('loadingOverlay')){ const el = document.createElement('div'); el.id='loadingOverlay'; el.className='fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50'; el.innerHTML=`<div class="bg-white p-6 rounded-lg shadow-lg text-center"><p class="text-blue-700 font-semibold">${msg}</p></div>`; document.body.appendChild(el);} }
-    function hideLoading(){ const e = document.getElementById('loadingOverlay'); if (e) e.remove(); }
+    function showLoading(msg){ if (!document.getElementById('loadingOverlay')){ const el=document.createElement('div'); el.id='loadingOverlay'; el.className='fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50'; el.innerHTML=`<div class="bg-white p-6 rounded-lg shadow-lg text-center"><p class="text-blue-700 font-semibold">${msg}</p></div>`; document.body.appendChild(el);} }
+    function hideLoading(){ const e=document.getElementById('loadingOverlay'); if (e) e.remove(); }
 
-    // last updated
-    function setLastUpdated(){ lastUpdated = new Date(); const el = document.getElementById('lastUpdated'); const waktu = lastUpdated.toLocaleString('id-ID', { timeZone:'Asia/Jakarta', hour12:false }); el.textContent = `⏱️ Diperbarui: ${waktu} WIB`; }
+    // initial call
+    init();
 
-    // init
-    initDashboard();
-
-    // expose for console debugging
-    window.__admin_debug = { guruList, kehadiranList, initDashboard };
+    // expose for debugging
+    window.__admin = { init, teachers, attendances };
 
   })();
   </script>
