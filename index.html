@@ -4,185 +4,146 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Aplikasi Kehadiran Guru SDN Muhara</title>
-
-  <!-- Tailwind CSS -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Confetti untuk efek submit -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
-
   <style>
-    :root {
-      --bg:#f4f6f9; --text:#1f2937; --card:#ffffff; --card-soft:#f9fafb;
-      --primary-900:#1e3a8a; --primary-800:#1e40af; --ring:rgba(59,130,246,.5);
-      --zebra:rgba(0,0,0,0.02);
-    }
-    .dark{
-      --bg:#0f172a; --text:#e2e8f0; --card:#0b1220; --card-soft:#111827;
-      --primary-900:#0b3a91; --primary-800:#0e3ea8; --ring:rgba(96,165,250,.5);
-      --zebra:rgba(255,255,255,.05);
-    }
-    body{ background:var(--bg); color:var(--text); }
-    header.header-gradient{ background:linear-gradient(90deg,var(--primary-900),var(--primary-800)); }
-    .elev-card{ background:var(--card); border-radius:.75rem; box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -2px rgba(0,0,0,.05); }
-    .focus-ring:focus{ outline:none; box-shadow:0 0 0 3px var(--ring); }
-    thead th{ position:sticky; top:0; z-index:1; background:var(--card-soft); }
-    tbody tr:nth-child(odd){ background:var(--zebra); }
-    #toast { transition: opacity .2s ease, transform .2s ease; }
-    #toast.show { opacity: 1; transform: translateY(0); }
-    #toast.hide { opacity: 0; transform: translateY(8px); }
-    /* avatar untuk app.js */
-    .avatar{ width:2rem; height:2rem; border-radius:9999px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:.875rem; color:#fff; flex-shrink:0; }
-    .name-cell{ display:inline-flex; align-items:center; gap:.5rem; }
+    body { background-color: #f4f6f9; }
+    .tab-active { background-color: #1e3a8a; color: #fff; }
+    .tab-btn:hover { background-color: #2563eb; color: white; }
   </style>
 </head>
-<body class="font-sans">
-
+<body class="font-sans text-gray-800">
   <!-- HEADER -->
-  <header class="header-gradient text-white p-4 shadow flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0">
-    <div class="flex items-center space-x-3">
-      <img src="SD_Negeri_Muhara.png" alt="Logo SDN Muhara" class="h-16 md:h-20 w-auto rounded-md bg-white p-1">
+<header class="bg-blue-900 text-white p-4 shadow flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0">
+  <div class="flex items-center space-x-3">
+    <img src="SD_Negeri_Muhara.png" alt="Logo SDN Muhara" class="h-16 md:h-20 w-auto rounded-md bg-white p-1">
+    <div>
+      <h1 class="text-xl md:text-2xl font-bold leading-tight">Aplikasi Kehadiran Guru SDN Muhara</h1>
+      <p id="current-date" class="text-sm opacity-90"></p>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-between md:justify-end space-x-3">
+    <canvas id="analogClock" width="70" height="70" class="bg-white rounded-full shadow-md md:w-[100px] md:h-[100px]"></canvas>
+    <a href="admin.html" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md">
+      <span class="mr-1">👤</span><span>Masuk Admin</span>
+    </a>
+  </div>
+</header>
+
+  <!-- NAV TAB -->
+  <nav class="flex justify-center bg-blue-800 text-white font-semibold shadow-md">
+    <button id="tab-kehadiran" class="tab-btn px-6 py-3 tab-active" onclick="switchTab('kehadiran')">Kehadiran</button>
+    <button id="tab-guru" class="tab-btn px-6 py-3" onclick="switchTab('guru')">Data Guru</button>
+    <button id="tab-laporan" class="tab-btn px-6 py-3" onclick="switchTab('laporan')">Laporan Bulanan</button>
+  </nav>
+
+  <!-- TAB KEHADIRAN -->
+  <section id="content-kehadiran" class="p-6">
+    <h2 class="text-xl font-semibold mb-4 text-blue-900">Form Kehadiran Guru</h2>
+    <form id="attendance-form" class="grid md:grid-cols-2 gap-3 bg-white p-5 rounded-lg shadow">
       <div>
-        <h1 class="text-xl md:text-2xl font-bold leading-tight">Aplikasi Kehadiran Guru SDN Muhara</h1>
-        <p id="current-date" class="text-sm opacity-90"></p>
-        <p id="greet" class="text-sm opacity-90"></p>
+        <label class="font-semibold">Nama Guru</label>
+        <select id="nama-guru-kehadiran" class="w-full border p-2 rounded" required>
+          <option value="">-- Pilih Guru --</option>
+        </select>
       </div>
+      <div>
+        <label class="font-semibold">Status Kehadiran</label>
+        <select id="status-kehadiran" class="w-full border p-2 rounded" required>
+          <option value="Hadir">Hadir</option>
+          <option value="Izin">Izin</option>
+          <option value="Sakit">Sakit</option>
+          <option value="Dinas Luar">Dinas Luar</option>
+        </select>
+      </div>
+      <div class="md:col-span-2">
+        <label class="font-semibold">Keterangan Lokasi (otomatis)</label>
+        <input id="keterangan-lokasi" type="text" class="w-full border p-2 rounded" readonly placeholder="Menentukan lokasi...">
+      </div>
+      <div class="md:col-span-2 text-center">
+        <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-lg mt-2">Simpan Kehadiran</button>
+      </div>
+    </form>
+
+    <!-- GRAFIK KEHADIRAN HARIAN -->
+    <div class="bg-white mt-8 p-5 rounded-lg shadow">
+      <h3 class="text-lg font-semibold text-blue-900 mb-3">Grafik Kehadiran Hari Ini</h3>
+      <canvas id="dailyChart" height="100"></canvas>
     </div>
 
-    <div class="flex items-center gap-2">
-      <a href="dashboard.html" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md focus-ring">
-        📊 Dashboard Admin
-      </a>
-      <button id="toggle-theme" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md focus-ring">
-        <span id="theme-icon" class="mr-1">🌙</span><span>Mode</span>
-      </button>
-      <canvas id="analogClock" width="70" height="70" class="bg-white rounded-full shadow-md md:w-[100px] md:h-[100px]"></canvas>
-    </div>
-  </header>
-
-  <!-- STAT KILAT -->
-  <section class="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-    <div class="elev-card p-4 flex items-center justify-between">
-      <div><p class="text-xs uppercase opacity-70">Hadir</p><p id="stat-hadir" class="text-2xl font-bold">0</p></div><span class="text-2xl">✅</span>
-    </div>
-    <div class="elev-card p-4 flex items-center justify-between">
-      <div><p class="text-xs uppercase opacity-70">Izin</p><p id="stat-izin" class="text-2xl font-bold">0</p></div><span class="text-2xl">📝</span>
-    </div>
-    <div class="elev-card p-4 flex items-center justify-between">
-      <div><p class="text-xs uppercase opacity-70">Sakit</p><p id="stat-sakit" class="text-2xl font-bold">0</p></div><span class="text-2xl">🤒</span>
-    </div>
-    <div class="elev-card p-4 flex items-center justify-between">
-      <div><p class="text-xs uppercase opacity-70">Dinas Luar</p><p id="stat-dl" class="text-2xl font-bold">0</p></div><span class="text-2xl">🚗</span>
+    <!-- TABEL KEHADIRAN -->
+    <div class="bg-white mt-8 p-5 rounded-lg shadow">
+      <h3 class="text-lg font-semibold text-blue-900 mb-3">Daftar Kehadiran Hari Ini</h3>
+      <table class="w-full border-collapse border text-sm">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="border p-2">Nama Guru</th>
+            <th class="border p-2">Status</th>
+            <th class="border p-2">Jam Hadir</th>
+            <th class="border p-2">Lokasi</th>
+            <th class="border p-2">Tanggal</th>
+          </tr>
+        </thead>
+        <tbody id="attendance-list"></tbody>
+      </table>
     </div>
   </section>
 
-  <!-- KEHADIRAN -->
-  <main class="p-6 max-w-5xl mx-auto space-y-6">
-    <section class="elev-card p-5">
-      <h2 class="text-xl font-semibold mb-4" style="color:var(--primary-900)">Form Kehadiran Guru</h2>
-      <form id="attendance-form" class="grid md:grid-cols-2 gap-3">
-        <div>
-          <label class="font-semibold">Nama Guru</label>
-          <select id="nama-guru-kehadiran" class="w-full border p-2 rounded focus-ring" required>
-            <option value="">-- Pilih Guru --</option>
-          </select>
-        </div>
-        <div>
-          <label class="font-semibold">Status Kehadiran</label>
-          <select id="status-kehadiran" class="w-full border p-2 rounded focus-ring" required>
-            <option value="Hadir">Hadir</option>
-            <option value="Izin">Izin</option>
-            <option value="Sakit">Sakit</option>
-            <option value="Dinas Luar">Dinas Luar</option>
-          </select>
-        </div>
-        <div class="md:col-span-2">
-          <label class="font-semibold">Keterangan Lokasi (otomatis)</label>
-          <input id="keterangan-lokasi" type="text" class="w-full border p-2 rounded focus-ring" readonly placeholder="Menentukan lokasi...">
-        </div>
-        <div class="md:col-span-2 text-center">
-          <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-lg mt-2 focus-ring">Simpan Kehadiran</button>
-        </div>
-      </form>
-    </section>
+  <!-- TAB DATA GURU -->
+  <section id="content-guru" class="hidden p-6">
+    <h2 class="text-xl font-semibold mb-4 text-blue-900">Manajemen Data Guru</h2>
 
-    <section class="elev-card p-5">
-      <h3 class="text-lg font-semibold mb-3" style="color:var(--primary-900)">Komposisi Kehadiran Hari Ini</h3>
-      <div class="relative" style="height:220px;">
-        <canvas id="dailyChart" height="140" style="max-height:220px" aria-label="Grafik komposisi kehadiran"></canvas>
+    <form id="guru-form" class="grid md:grid-cols-2 gap-3 bg-white p-5 rounded-lg shadow">
+      <input id="nama-guru" type="text" class="border p-2 rounded" placeholder="Nama Guru" required>
+      <input id="nip-guru" type="text" class="border p-2 rounded" placeholder="NIP">
+      <input id="jabatan-guru" type="text" class="border p-2 rounded" placeholder="Jabatan">
+      <select id="status-kepegawaian" class="border p-2 rounded">
+        <option value="PNS">PNS</option>
+        <option value="PPPK">PPPK</option>
+        <option value="Honorer">Honorer</option>
+      </select>
+      <button type="submit" class="bg-green-700 hover:bg-green-800 text-white px-6 py-2 rounded-lg md:col-span-2 mt-2">Tambah / Update Guru</button>
+    </form>
+
+    <div class="bg-white mt-8 p-5 rounded-lg shadow">
+      <h3 class="text-lg font-semibold text-blue-900 mb-3">Daftar Guru</h3>
+      <table class="w-full border-collapse border text-sm">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="border p-2">Nama Guru</th>
+            <th class="border p-2">NIP</th>
+            <th class="border p-2">Jabatan</th>
+            <th class="border p-2">Status</th>
+            <th class="border p-2">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="guru-list"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- TAB LAPORAN BULANAN -->
+  <section id="content-laporan" class="hidden p-6">
+    <h2 class="text-xl font-semibold mb-4 text-blue-900">Laporan Bulanan</h2>
+    <div class="bg-white p-5 rounded-lg shadow">
+      <label class="font-semibold">Pilih Bulan:</label>
+      <input type="month" id="bulan-laporan" class="border p-2 rounded ml-2" onchange="generateMonthlyReport()">
+      <div class="flex justify-end mt-3">
+        <button onclick="downloadMonthlyReport()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+          📥 Download Laporan (Excel)
+        </button>
       </div>
-    </section>
+    </div>
 
-    <section class="elev-card p-5">
-      <h3 class="text-lg font-semibold mb-3" style="color:var(--primary-900)">Daftar Kehadiran Hari Ini</h3>
-      <div class="overflow-auto">
-        <table class="w-full border-collapse border text-sm">
-          <thead>
-            <tr>
-              <th class="border p-2">Nama Guru</th>
-              <th class="border p-2">Status</th>
-              <th class="border p-2">Jam Hadir</th>
-              <th class="border p-2">Lokasi</th>
-              <th class="border p-2">Tanggal</th>
-            </tr>
-          </thead>
-          <tbody id="attendance-list"></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
+    <div class="bg-white mt-5 p-5 rounded-lg shadow overflow-auto">
+      <h3 class="text-lg font-semibold text-blue-900 mb-3">Rekap Kehadiran Bulan Ini</h3>
+      <table id="tabel-laporan" class="w-full border-collapse border text-sm min-w-max"></table>
+    </div>
 
-  <!-- Toast -->
-  <div id="toast" class="fixed bottom-4 right-4 z-50 hide" aria-live="polite" aria-atomic="true" style="opacity:0;">
-    <div class="bg-blue-600 text-white px-4 py-3 rounded-lg shadow-lg">✅ Data kehadiran tersimpan</div>
-  </div>
+    <div id="resume-laporan" class="bg-blue-50 mt-6 p-5 rounded-lg shadow text-gray-800"></div>
+  </section>
 
-  <!-- App logic -->
   <script src="app.js"></script>
-
-  <!-- Inisialisasi ringan -->
-  <script>
-    // Tanggal & sapaan
-    (function(){
-      const now = new Date();
-      const hari = now.toLocaleDateString('id-ID', { weekday:'long' });
-      const tanggal = now.toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' });
-      const jam = now.getHours();
-      const sapaan = jam < 11 ? 'Selamat pagi' : (jam < 15 ? 'Selamat siang' : (jam < 18 ? 'Selamat sore' : 'Selamat malam'));
-      document.getElementById('current-date').textContent = `${hari}, ${tanggal}`;
-      document.getElementById('greet').textContent = `${sapaan}, Guru!`;
-    })();
-
-    // Dark mode
-    (function initTheme(){
-      try{
-        const saved = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const theme = saved || (prefersDark ? 'dark' : 'light');
-        document.documentElement.classList.toggle('dark', theme === 'dark');
-        const icon = document.getElementById('theme-icon'); if(icon) icon.textContent = theme === 'dark' ? '☀️' : '🌙';
-      }catch(e){}
-    })();
-    document.getElementById('toggle-theme')?.addEventListener('click', () => {
-      const isDark = document.documentElement.classList.toggle('dark');
-      try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch(e){}
-      const icon = document.getElementById('theme-icon'); if(icon) icon.textContent = isDark ? '☀️' : '🌙';
-    });
-
-    // Toast & confetti (ringan)
-    function showToast(){
-      const el = document.getElementById('toast');
-      el.classList.remove('hide'); el.classList.add('show'); el.style.opacity = '1';
-      setTimeout(()=>{ el.classList.remove('show'); el.classList.add('hide'); el.style.opacity = '0'; }, 1600);
-    }
-    function shootConfetti(){ try{ confetti({ particleCount:50, spread:55, origin:{ y:0.8 } }); }catch(e){} }
-    document.getElementById('attendance-form')?.addEventListener('submit', () => {
-      setTimeout(()=>{ shootConfetti(); showToast(); }, 50);
-    });
-
-    // Jam analog (backup)
-    window.addEventListener('load', () => { if (typeof drawAnalogClock === 'function') drawAnalogClock(); });
-  </script>
 </body>
 </html>
